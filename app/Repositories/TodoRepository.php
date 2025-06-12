@@ -1,5 +1,5 @@
 <?php
-// app/Repositories/TodoRepository.php - YENİ METHODLAR EKLENMİŞ
+// app/Repositories/TodoRepository.php
 
 namespace App\Repositories;
 
@@ -15,8 +15,6 @@ class TodoRepository implements TodoRepositoryInterface
     {
         $this->model = $model;
     }
-
-    // ... MEVCUT METHODLAR AYNI KALACAK ...
 
     public function all(): Collection
     {
@@ -51,51 +49,21 @@ class TodoRepository implements TodoRepositoryInterface
 
     public function getCompleted(): Collection
     {
-        return $this->model->completed()
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return $this->model->where('completed', true)->orderBy('completed_at', 'desc')->get();
     }
 
     public function getPending(): Collection
     {
-        return $this->model->pending()
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return $this->model->where('completed', false)->orderBy('created_at', 'desc')->get();
     }
 
-    // YENİ METHODLAR
-
-    /**
-     * Belirli kategorideki todo'ları getir
-     */
     public function getByCategory(int $categoryId): Collection
     {
-        return $this->model
-            ->byCategory($categoryId)  // Model scope kullanımı
-            ->with('category')         // Kategori bilgisini de getir
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return $this->model->where('category_id', $categoryId)->orderBy('created_at', 'desc')->get();
     }
 
-    /**
-     * Tüm todo'ları kategori bilgileriyle getir
-     */
-    public function getTodosWithCategories(): Collection
+    public function getWithCategory(): Collection
     {
-        return $this->model
-            ->with('category')  // Her todo için kategori bilgisi
-            ->orderBy('created_at', 'desc')
-            ->get();
-    }
-
-    /**
-     * Kategorisi olmayan todo'ları getir
-     */
-    public function getUncategorizedTodos(): Collection
-    {
-        return $this->model
-            ->whereNull('category_id')  // category_id = NULL
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return $this->model->with('category')->orderBy('created_at', 'desc')->get();
     }
 }

@@ -1,41 +1,27 @@
 <?php
-// app/Providers/RepositoryServiceProvider.php - GÜNCELLENMİŞ HALİ
+// app/Providers/RepositoryServiceProvider.php
 
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
-// Todo Repository
-use App\Repositories\Interfaces\TodoRepositoryInterface;
-use App\Repositories\TodoRepository;
-
-// Category Repository - YENİ EKLENEN!
-use App\Repositories\Interfaces\CategoryRepositoryInterface;
-use App\Repositories\CategoryRepository;
-
 class RepositoryServiceProvider extends ServiceProvider
 {
-    /**
-     * Register services.
-     */
     public function register()
     {
-        // Todo Repository Binding
+        // Todo Repository
         $this->app->bind(
-            TodoRepositoryInterface::class,
-            TodoRepository::class
+            \App\Repositories\Interfaces\TodoRepositoryInterface::class,
+            \App\Repositories\TodoRepository::class
         );
 
-        // Category Repository Binding - YENİ EKLENEN!
+        // Category Repository
         $this->app->bind(
-            CategoryRepositoryInterface::class,
-            CategoryRepository::class
+            \App\Repositories\Interfaces\CategoryRepositoryInterface::class,
+            \App\Repositories\CategoryRepository::class
         );
     }
 
-    /**
-     * Bootstrap services.
-     */
     public function boot()
     {
         //

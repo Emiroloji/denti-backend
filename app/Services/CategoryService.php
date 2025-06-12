@@ -1,79 +1,87 @@
 <?php
-// app/Services/CategoryService.php - MİNİMAL VERSİYON
+// app/Services/CategoryService.php
 
 namespace App\Services;
 
+use App\Repositories\Interfaces\CategoryRepositoryInterface;
+use App\Repositories\Interfaces\TodoRepositoryInterface;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Collection;
 
 class CategoryService
 {
-    /**
-     * Şimdilik Repository kullanmadan, direkt Model ile çalışalım
-     */
-    public function getAllCategories(): Collection
-    {
-        return Category::orderBy('created_at', 'desc')->get();
+    protected $categoryRepository;
+    protected $todoRepository;
+
+    public function __construct(
+        CategoryRepositoryInterface $categoryRepository,
+        TodoRepositoryInterface $todoRepository
+    ) {
+        $this->categoryRepository = $categoryRepository;
+        $this->todoRepository = $todoRepository;
     }
 
-    public function getCategoriesWithStats(): Collection
+    public function getAllCategories(): Collection
     {
-        return Category::withCount('todos')->orderBy('name')->get();
+        return $this->categoryRepository->all();
     }
 
     public function getCategoryById(int $id): ?Category
     {
-        return Category::find($id);
+        return $this->categoryRepository->find($id);
     }
 
     public function createCategory(array $data): Category
     {
-        // Basit business logic
-        if (strlen($data['name']) < 2) {
-            throw new \Exception('Kategori adı en az 2 karakter olmalı!');
-        }
-
         // Default değerler
-        $data['color'] = $data['color'] ?? '#6B7280';
         $data['is_active'] = $data['is_active'] ?? true;
+        $data['color'] = $data['color'] ?? '#6B7280';
 
-        return Category::create($data);
+        return $this->categoryRepository->create($data);
     }
 
     public function updateCategory(int $id, array $data): ?Category
     {
-        $category = Category::find($id);
-        if (!$category) {
-            throw new \Exception('Kategori bulunamadı!');
-        }
-
-        $category->update($data);
-        return $category;
+        return $this->categoryRepository->update($id, $data);
     }
 
     public function deleteCategory(int $id): bool
     {
-        $category = Category::find($id);
+        $category = $this->categoryRepository->find($id);
         if (!$category) {
-            throw new \Exception('Kategori bulunamadı!');
+            return false;
         }
 
-        return $category->delete();
-    }
-
-    public function searchCategories(string $query): Collection
-    {
-        return Category::where('name', 'LIKE', "%{$query}%")->get();
-    }
-
-    public function toggleCategoryStatus(int $id): ?Category
-    {
-        $category = Category::find($id);
-        if (!$category) {
-            throw new \Exception('Kategori bulunamadı!');
+        if ($category->todos()->count() > 0) {
+            throw new \Exception('Bu kategoriye ait todolar bulunmaktadır.');
         }
 
-        $category->update(['is_active' => !$category->is_active]);
-        return $category;
+        return $this->categoryRepository->delete($id);
+    }
+
+    public function getCategoryStats(int $id): array
+    {
+        $category = $this->categoryRepository->find($id);
+        if (!$category) {
+            throw new \Exception('Kategori bulunamadı');
+        }
+
+        $todos = $category->todos;
+
+        return [
+            'category' => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'color' => $category->color,
+                'is_active' => $category->is_active
+            ],
+            'stats' => [
+                'total' => $todos->count(),
+                'completed' => $todos->where('completed', true)->count(),
+                'pending' => $todos->where('completed', false)->count(),
+                'completion_rate' => $todos->count() > 0 ?
+                    round(($todos->where('completed', true)->count() / $todos->count()) * 100, 2) : 0
+            ]
+        ];
     }
 }
