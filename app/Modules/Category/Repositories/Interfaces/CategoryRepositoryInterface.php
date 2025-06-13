@@ -1,9 +1,9 @@
 <?php
 // app/Repositories/Interfaces/CategoryRepositoryInterface.php
 
-namespace App\Repositories\Interfaces;
+namespace App\Modules\Category\Repositories\Interfaces;
 
-use App\Models\Category;
+use App\Modules\Category\Models\Category;
 use Illuminate\Database\Eloquent\Collection;
 
 interface CategoryRepositoryInterface

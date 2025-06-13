@@ -1,9 +1,9 @@
 <?php
 // app/Repositories/Interfaces/TodoRepositoryInterface.php
 
-namespace App\Repositories\Interfaces;
+namespace App\Modules\Todo\Repositories\Interfaces;
 
-use App\Models\Todo;
+use App\Modules\Todo\Models\Todo;
 use Illuminate\Database\Eloquent\Collection;
 
 interface TodoRepositoryInterface

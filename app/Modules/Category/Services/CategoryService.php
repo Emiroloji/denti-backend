@@ -1,11 +1,11 @@
 <?php
 // app/Services/CategoryService.php
 
-namespace App\Services;
+namespace App\Modules\Category\Services;
 
-use App\Repositories\Interfaces\CategoryRepositoryInterface;
-use App\Repositories\Interfaces\TodoRepositoryInterface;
-use App\Models\Category;
+use App\Modules\Category\Repositories\Interfaces\CategoryRepositoryInterface;
+use App\Modules\Todo\Repositories\Interfaces\TodoRepositoryInterface;
+use App\Modules\Category\Models\Category;
 use Illuminate\Database\Eloquent\Collection;
 
 class CategoryService

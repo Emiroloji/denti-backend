@@ -1,7 +1,7 @@
 <?php
 // app/Models/Category.php
 
-namespace App\Models;
+namespace App\Modules\Category\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +20,6 @@ class Category extends Model
 
     public function todos()
     {
-        return $this->hasMany(Todo::class);
+        return $this->hasMany(\App\Modules\Todo\Models\Todo::class);
     }
 }

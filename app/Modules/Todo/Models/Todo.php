@@ -1,7 +1,7 @@
 <?php
 // app/Models/Todo.php
 
-namespace App\Models;
+namespace App\Modules\Todo\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,6 +22,6 @@ class Todo extends Model
 
     public function category()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(\App\Modules\Category\Models\Category::class);
     }
 }
