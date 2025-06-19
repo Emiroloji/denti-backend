@@ -23,6 +23,12 @@ class StockService
         return $this->stockRepository->getAllWithFilters($filters);
     }
 
+    // ✅ EKSİK METHOD EKLENDİ - Ana sorunun çözümü
+    public function getStockById(int $id): ?Stock
+    {
+        return $this->stockRepository->find($id);
+    }
+
     public function createStock(array $data): Stock
     {
         return DB::transaction(function () use ($data) {
@@ -64,6 +70,46 @@ class StockService
             }
 
             return $updatedStock;
+        });
+    }
+
+    // ✅ EKSİK METHOD EKLENDİ - Frontend'in ihtiyaç duyduğu
+    public function deleteStock(int $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            $stock = $this->stockRepository->find($id);
+            if (!$stock) return false;
+
+            // İşlem kayıtları kontrolü
+            if ($stock->transactions()->count() > 0) {
+                // Hard delete yerine soft delete yap
+                $this->stockRepository->update($id, [
+                    'status' => 'deleted',
+                    'is_active' => false,
+                    'deleted_at' => now(),
+                    'current_stock' => 0,
+                    'available_stock' => 0
+                ]);
+
+                return true; // Başarılı olarak döndür
+            }
+
+            // İşlem kaydı yoksa gerçek silme yapabilir
+            if ($stock->requests()->count() > 0) {
+                // Talep kayıtları varsa da soft delete
+                $this->stockRepository->update($id, [
+                    'status' => 'deleted',
+                    'is_active' => false,
+                    'deleted_at' => now(),
+                    'current_stock' => 0,
+                    'available_stock' => 0
+                ]);
+
+                return true;
+            }
+
+            // Hiç kayıt yoksa gerçek silme
+            return $this->stockRepository->delete($id);
         });
     }
 
@@ -191,5 +237,29 @@ class StockService
     public function getExpiredItems(int $clinicId = null): Collection
     {
         return $this->stockRepository->getExpiredItems($clinicId);
+    }
+
+    // ✅ YENİ METHOD EKLENDİ - Frontend'in ihtiyaç duyduğu stats
+    public function getStockStats(int $clinicId = null): array
+    {
+        $baseQuery = $this->stockRepository->getBaseQuery();
+
+        if ($clinicId) {
+            $baseQuery->where('clinic_id', $clinicId);
+        }
+
+        $totalItems = $baseQuery->count();
+        $lowStockItems = (clone $baseQuery)->lowStock()->count();
+        $criticalStockItems = (clone $baseQuery)->criticalStock()->count();
+        $expiringItems = (clone $baseQuery)->nearExpiry(30)->count();
+        $totalValue = (clone $baseQuery)->sum(DB::raw('purchase_price * current_stock'));
+
+        return [
+            'total_items' => $totalItems,
+            'low_stock_items' => $lowStockItems,
+            'critical_stock_items' => $criticalStockItems,
+            'expiring_items' => $expiringItems,
+            'total_value' => round($totalValue, 2)
+        ];
     }
 }
