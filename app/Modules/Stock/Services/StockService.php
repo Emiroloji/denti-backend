@@ -29,25 +29,7 @@ class StockService
         return $this->stockRepository->find($id);
     }
 
-    public function createStock(array $data): Stock
-    {
-        return DB::transaction(function () use ($data) {
-            // Stok kodu otomatik oluştur
-            if (!isset($data['code'])) {
-                $data['code'] = $this->generateStockCode($data['clinic_id']);
-            }
 
-            // Kullanılabilir stok hesapla
-            $data['available_stock'] = $data['current_stock'] - ($data['reserved_stock'] ?? 0);
-
-            $stock = $this->stockRepository->create($data);
-
-            // Stok seviyesi kontrolü
-            $this->checkStockLevels($stock);
-
-            return $stock;
-        });
-    }
 
     public function updateStock(int $id, array $data): ?Stock
     {
@@ -73,45 +55,7 @@ class StockService
         });
     }
 
-    // ✅ EKSİK METHOD EKLENDİ - Frontend'in ihtiyaç duyduğu
-    public function deleteStock(int $id): bool
-    {
-        return DB::transaction(function () use ($id) {
-            $stock = $this->stockRepository->find($id);
-            if (!$stock) return false;
 
-            // İşlem kayıtları kontrolü
-            if ($stock->transactions()->count() > 0) {
-                // Hard delete yerine soft delete yap
-                $this->stockRepository->update($id, [
-                    'status' => 'deleted',
-                    'is_active' => false,
-                    'deleted_at' => now(),
-                    'current_stock' => 0,
-                    'available_stock' => 0
-                ]);
-
-                return true; // Başarılı olarak döndür
-            }
-
-            // İşlem kaydı yoksa gerçek silme yapabilir
-            if ($stock->requests()->count() > 0) {
-                // Talep kayıtları varsa da soft delete
-                $this->stockRepository->update($id, [
-                    'status' => 'deleted',
-                    'is_active' => false,
-                    'deleted_at' => now(),
-                    'current_stock' => 0,
-                    'available_stock' => 0
-                ]);
-
-                return true;
-            }
-
-            // Hiç kayıt yoksa gerçek silme
-            return $this->stockRepository->delete($id);
-        });
-    }
 
     public function adjustStock(int $stockId, int $quantity, string $reason, string $performedBy): bool
     {
@@ -262,4 +206,99 @@ class StockService
             'total_value' => round($totalValue, 2)
         ];
     }
+
+
+
+
+    /**
+     * Get all stocks including inactive and deleted
+     */
+    public function getAllStocksWithInactive(array $filters = []): Collection
+    {
+        return $this->stockRepository->getAllWithFiltersIncludingInactive($filters);
+    }
+
+    /**
+     * ✅ DELETE METODUNU DÜZELTELİM - Soft delete mantığı
+     */
+    public function deleteStock(int $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            $stock = $this->stockRepository->find($id);
+            if (!$stock) return false;
+
+            // İşlem kayıtları varsa soft delete yap
+            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
+                // Soft delete - sadece pasif yap
+                $this->stockRepository->update($id, [
+                    'status' => 'deleted',
+                    'is_active' => false,
+                    'current_stock' => 0,
+                    'available_stock' => 0
+                ]);
+
+                return true; // Başarılı olarak döndür
+            }
+
+            // İşlem kaydı yoksa gerçek silme
+            return $this->stockRepository->delete($id);
+        });
+    }
+
+    /**
+     * ✅ CREATE METODUNU DÜZELTELİM
+     */
+    public function createStock(array $data): Stock
+    {
+        return DB::transaction(function () use ($data) {
+            // ✅ EXPLICIT DEFAULT DEĞERLER
+            $data['is_active'] = $data['is_active'] ?? true;
+            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
+            $data['currency'] = $data['currency'] ?? 'TRY';
+            $data['track_expiry'] = $data['track_expiry'] ?? true;
+            $data['track_batch'] = $data['track_batch'] ?? false;
+
+            // Stok kodu otomatik oluştur
+            if (!isset($data['code'])) {
+                $data['code'] = $this->generateStockCode($data['clinic_id']);
+            }
+
+            // Kullanılabilir stok hesapla
+            $data['available_stock'] = $data['current_stock'] - ($data['reserved_stock'] ?? 0);
+
+            // Debug için log
+            \Log::info('StockService createStock:', [
+                'is_active' => $data['is_active'],
+                'status' => $data['status'],
+                'name' => $data['name']
+            ]);
+
+            $stock = $this->stockRepository->create($data);
+
+            // Stok seviyesi kontrolü
+            $this->checkStockLevels($stock);
+
+            return $stock;
+        });
+
+
+    }
+    public function forceDeleteStock(int $id): bool
+        {
+            return DB::transaction(function () use ($id) {
+                $stock = $this->stockRepository->find($id);
+                if (!$stock) return false;
+
+                // İşlem kayıtları kontrolü
+                if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
+                    throw new \Exception('Bu stok için işlem kayıtları mevcut. Kalıcı silme yapılamaz.');
+                }
+
+                // Alerts'leri de sil
+                $stock->alerts()->delete();
+
+                // Gerçek silme
+                return $this->stockRepository->delete($id);
+            });
+        }
 }

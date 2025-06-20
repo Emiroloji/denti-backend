@@ -17,29 +17,33 @@ Route::prefix('api/stocks')->group(function () {
 
     // ✅ SPECİFİC ROUTES ÖNCE - Önemli: {id} route'undan önce gelmeli!
 
-    // Stock Statistics - Frontend'in ihtiyaç duyduğu
+    // Stock Statistics
     Route::get('/stats', [StockController::class, 'getStats']);
 
-    // Stock Levels - Frontend endpoint'leri ile uyumlu
+    // Stock Levels
     Route::get('/low-level', [StockController::class, 'getLowLevel']);
     Route::get('/critical-level', [StockController::class, 'getCriticalLevel']);
     Route::get('/expiring', [StockController::class, 'getExpiring']);
 
-    // Backward compatibility için eski endpoint'ler
+    // Backward compatibility
     Route::get('/levels/low', [StockController::class, 'getLowStockItems']);
     Route::get('/levels/critical', [StockController::class, 'getCriticalStockItems']);
     Route::get('/levels/expiring', [StockController::class, 'getExpiringItems']);
 
-    // ✅ GENERIC ROUTES SONRA - {id} parametresi specific route'ları örtmesin!
+    // ✅ YENİ ENDPOINT'LER - Frontend için
+    Route::put('/{id}/deactivate', [StockController::class, 'deactivate']); // Pasif yap
+    Route::delete('/{id}/force', [StockController::class, 'forceDelete']); // Kalıcı sil
+    Route::put('/{id}/reactivate', [StockController::class, 'reactivate']); // Tekrar aktif et
+
+    // ✅ GENERIC ROUTES SONRA
     Route::get('/{id}', [StockController::class, 'show']);
     Route::put('/{id}', [StockController::class, 'update']);
-    Route::delete('/{id}', [StockController::class, 'destroy']);
+    Route::delete('/{id}', [StockController::class, 'destroy']); // Soft delete
 
     // Stock Operations
     Route::post('/{id}/adjust', [StockController::class, 'adjustStock']);
     Route::post('/{id}/use', [StockController::class, 'useStock']);
 });
-
 // Suppliers
 Route::prefix('api/suppliers')->group(function () {
     Route::get('/', [SupplierController::class, 'index']);

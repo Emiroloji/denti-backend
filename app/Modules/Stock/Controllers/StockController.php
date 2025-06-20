@@ -32,63 +32,6 @@ class StockController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:stocks,code',
-            'description' => 'nullable|string',
-            'unit' => 'required|string|max:50',
-            'category' => 'nullable|string|max:100',
-            'brand' => 'nullable|string|max:100',
-            'supplier_id' => 'required|exists:suppliers,id',
-            'clinic_id' => 'required|exists:clinics,id',
-            'purchase_price' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|max:10',
-            'purchase_date' => 'nullable|date',
-            'expiry_date' => 'nullable|date|after:today',
-            'current_stock' => 'required|integer|min:0',
-            'min_stock_level' => 'required|integer|min:0',
-            'critical_stock_level' => 'required|integer|min:0',
-            'yellow_alert_level' => 'nullable|integer|min:0',
-            'red_alert_level' => 'nullable|integer|min:0',
-            'track_expiry' => 'boolean',
-            'track_batch' => 'boolean',
-            'storage_location' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $data = $validator->validated();
-
-            // Set defaults for alert levels if not provided
-            $data['yellow_alert_level'] = $data['yellow_alert_level'] ?? $data['min_stock_level'];
-            $data['red_alert_level'] = $data['red_alert_level'] ?? $data['critical_stock_level'];
-            $data['currency'] = $data['currency'] ?? 'TRY';
-            $data['is_active'] = $data['is_active'] ?? true;
-            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
-
-            $stock = $this->stockService->createStock($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Stok başarıyla oluşturuldu',
-                'data' => $stock
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
-    }
 
     public function show($id)
     {
@@ -369,4 +312,180 @@ class StockController extends Controller
     {
         return $this->getExpiring($request);
     }
+
+    public function forceDelete($id)
+    {
+        try {
+            $stock = $this->stockService->getStockById($id);
+
+            if (!$stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok bulunamadı'
+                ], 404);
+            }
+
+            // İşlem kayıtları varsa hard delete yapma
+            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu stok için işlem kayıtları mevcut. Sadece pasif yapılabilir.',
+                    'data' => [
+                        'has_transactions' => $stock->transactions()->count(),
+                        'has_requests' => $stock->requests()->count(),
+                        'can_force_delete' => false
+                    ]
+                ], 400);
+            }
+
+            $deleted = $this->stockService->forceDeleteStock($id);
+
+            if (!$deleted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok silinemedi'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stok kalıcı olarak silindi'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+    public function deactivate($id)
+        {
+            try {
+                $stock = $this->stockService->getStockById($id);
+
+                if (!$stock) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stok bulunamadı'
+                    ], 404);
+                }
+
+                $updatedStock = $this->stockService->updateStock($id, [
+                    'is_active' => false,
+                    'status' => 'inactive'
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stok pasif duruma getirildi',
+                    'data' => $updatedStock
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+        }
+
+    /**
+     * Reactivate (Tekrar aktif et)
+     */
+    public function reactivate($id)
+    {
+        try {
+            $stock = $this->stockService->getStockById($id);
+
+            if (!$stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok bulunamadı'
+                ], 404);
+            }
+
+            if ($stock->status === 'deleted') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silinmiş stok aktif edilemez'
+                ], 400);
+            }
+
+            $updatedStock = $this->stockService->updateStock($id, [
+                'is_active' => true,
+                'status' => 'active'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stok tekrar aktif edildi',
+                'data' => $updatedStock
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|unique:stocks,code',
+            'description' => 'nullable|string',
+            'unit' => 'required|string|max:50',
+            'category' => 'nullable|string|max:100',
+            'brand' => 'nullable|string|max:100',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'clinic_id' => 'required|exists:clinics,id',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'currency' => 'nullable|string|max:10',
+            'purchase_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date|after:today',
+            'current_stock' => 'required|integer|min:0',
+            'min_stock_level' => 'required|integer|min:0',
+            'critical_stock_level' => 'required|integer|min:0',
+            'yellow_alert_level' => 'nullable|integer|min:0',
+            'red_alert_level' => 'nullable|integer|min:0',
+            'track_expiry' => 'boolean',
+            'track_batch' => 'boolean',
+            'storage_location' => 'nullable|string|max:255',
+            'is_active' => 'boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $data = $validator->validated();
+
+            // ✅ EXPLICIT DEFAULT DEĞERLER
+            $data['yellow_alert_level'] = $data['yellow_alert_level'] ?? $data['min_stock_level'];
+            $data['red_alert_level'] = $data['red_alert_level'] ?? $data['critical_stock_level'];
+            $data['currency'] = $data['currency'] ?? 'TRY';
+            $data['is_active'] = $data['is_active'] ?? true; // EXPLICIT TRUE
+            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
+            $data['track_expiry'] = $data['track_expiry'] ?? true;
+            $data['track_batch'] = $data['track_batch'] ?? false;
+
+            $stock = $this->stockService->createStock($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stok başarıyla oluşturuldu',
+                'data' => $stock
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+
 }
