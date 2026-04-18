@@ -134,4 +134,54 @@ class StockAlertService
             'near_expiry' => $this->stockAlertRepository->countAlertsByType('near_expiry', $clinicId)
         ];
     }
+
+    public function getPendingCount(int $clinicId = null): int
+    {
+        return $this->stockAlertRepository->countActiveAlerts($clinicId);
+    }
+
+    public function dismissAlert(int $alertId): bool
+    {
+        return (bool) $this->stockAlertRepository->update($alertId, [
+            'is_active' => false
+        ]);
+    }
+
+    public function deleteAlert(int $alertId): bool
+    {
+        return $this->stockAlertRepository->delete($alertId);
+    }
+
+    public function bulkResolve(array $ids, string $resolvedBy): int
+    {
+        $count = 0;
+        foreach ($ids as $id) {
+            if ($this->resolveAlert($id, $resolvedBy)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    public function bulkDismiss(array $ids): int
+    {
+        $count = 0;
+        foreach ($ids as $id) {
+            if ($this->dismissAlert($id)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    public function bulkDelete(array $ids): int
+    {
+        $count = 0;
+        foreach ($ids as $id) {
+            if ($this->deleteAlert($id)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
 }

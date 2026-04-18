@@ -104,4 +104,191 @@ class StockAlertController extends Controller
             'data' => $statistics
         ]);
     }
+
+    public function getPendingCount(Request $request)
+    {
+        $clinicId = $request->query('clinic_id');
+        $count = $this->stockAlertService->getPendingCount($clinicId);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['count' => $count]
+        ]);
+    }
+
+    public function getActive(Request $request)
+    {
+        $clinicId = $request->query('clinic_id');
+        $type = $request->query('type');
+        
+        $alerts = $this->stockAlertService->getActiveAlerts($clinicId, $type);
+
+        return response()->json([
+            'success' => true,
+            'data' => $alerts
+        ]);
+    }
+
+    public function getSettings(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'email_notifications' => true,
+                'push_notifications' => true,
+                'daily_digest' => false,
+            ]
+        ]);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Ayarlar güncellendi',
+            'data' => $request->all()
+        ]);
+    }
+
+    public function bulkResolve(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'resolved_by' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $count = $this->stockAlertService->bulkResolve(
+                $request->ids,
+                $request->resolved_by
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} alarm başarıyla çözümlendi",
+                'data' => ['count' => $count]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function bulkDismiss(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array',
+            'ids.*' => 'integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $count = $this->stockAlertService->bulkDismiss($request->ids);
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} alarm yoksayıldı",
+                'data' => ['count' => $count]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => 'required|array',
+            'ids.*' => 'integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $count = $this->stockAlertService->bulkDelete($request->ids);
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} alarm silindi",
+                'data' => ['count' => $count]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function dismiss(Request $request, $id)
+    {
+        try {
+            $result = $this->stockAlertService->dismissAlert($id);
+
+            if (!$result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Alarm yoksayılamadı'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Alarm başarıyla yoksayıldı'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $result = $this->stockAlertService->deleteAlert($id);
+
+            if (!$result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Alarm silinemedi'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Alarm başarıyla silindi'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
 }

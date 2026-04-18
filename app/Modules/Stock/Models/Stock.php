@@ -19,7 +19,8 @@ class Stock extends Model
         'min_stock_level', 'critical_stock_level',
         'yellow_alert_level', 'red_alert_level',
         'internal_usage_count', 'status', 'is_active', 'track_expiry', 'track_batch',
-        'clinic_id', 'storage_location'
+        'clinic_id', 'storage_location',
+        'has_sub_unit', 'sub_unit_name', 'sub_unit_multiplier', 'current_sub_stock'
     ];
 
     protected $casts = [
@@ -29,6 +30,9 @@ class Stock extends Model
         'track_expiry' => 'boolean',
         'track_batch' => 'boolean',
         'is_active' => 'boolean',
+        'has_sub_unit' => 'boolean',
+        'sub_unit_multiplier' => 'integer',
+        'current_sub_stock' => 'integer',
     ];
 
     protected $attributes = [
@@ -41,6 +45,8 @@ class Stock extends Model
         'reserved_stock' => 0,
         'available_stock' => 0,
         'internal_usage_count' => 0,
+        'has_sub_unit' => false,
+        'current_sub_stock' => 0,
     ];
 
     // İlişkiler
@@ -89,14 +95,22 @@ class Stock extends Model
 
     public function scopeLowStock($query)
     {
-        return $query->whereRaw('current_stock <= yellow_alert_level')
-                    ->where('is_active', true);
+        return $query->whereRaw('
+            (CASE 
+                WHEN has_sub_unit = 1 THEN (current_stock * COALESCE(sub_unit_multiplier, 1)) + current_sub_stock 
+                ELSE current_stock 
+             END) <= yellow_alert_level
+        ')->where('is_active', true);
     }
 
     public function scopeCriticalStock($query)
     {
-        return $query->whereRaw('current_stock <= red_alert_level')
-                    ->where('is_active', true);
+        return $query->whereRaw('
+            (CASE 
+                WHEN has_sub_unit = 1 THEN (current_stock * COALESCE(sub_unit_multiplier, 1)) + current_sub_stock 
+                ELSE current_stock 
+             END) <= red_alert_level
+        ')->where('is_active', true);
     }
 
     public function scopeNearExpiry($query, $days = 30)
@@ -115,12 +129,22 @@ class Stock extends Model
     }
 
     // Accessor'lar
+    public function getTotalBaseUnitsAttribute()
+    {
+        if (!$this->has_sub_unit) {
+            return $this->current_stock;
+        }
+        return ($this->current_stock * ($this->sub_unit_multiplier ?? 1)) + $this->current_sub_stock;
+    }
+
     public function getStockStatusAttribute()
     {
         if ($this->status === 'deleted') return 'deleted';
         if (!$this->is_active) return 'inactive';
-        if ($this->current_stock <= $this->red_alert_level) return 'critical';
-        if ($this->current_stock <= $this->yellow_alert_level) return 'low';
+        
+        $total = $this->total_base_units;
+        if ($total <= $this->red_alert_level) return 'critical';
+        if ($total <= $this->yellow_alert_level) return 'low';
         return 'normal';
     }
 

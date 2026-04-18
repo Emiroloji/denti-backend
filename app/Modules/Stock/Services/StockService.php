@@ -96,34 +96,64 @@ class StockService
     {
         return DB::transaction(function () use ($stockId, $quantity, $performedBy, $notes) {
             $stock = $this->stockRepository->find($stockId);
-            if (!$stock || $stock->available_stock < $quantity) {
+            
+            if (!$stock) {
                 return false;
             }
 
-            $previousStock = $stock->current_stock;
-            $newStock = $previousStock - $quantity;
+            $isSubUnitUsage = $stock->has_sub_unit && $stock->sub_unit_multiplier > 0;
+            $newMainStock = $stock->current_stock;
+            $newSubStock = $stock->current_sub_stock;
 
-            // Stok güncelle
-            $this->stockRepository->update($stockId, [
-                'current_stock' => $newStock,
-                'available_stock' => $newStock - $stock->reserved_stock,
+            if ($isSubUnitUsage) {
+                $needed = $quantity;
+                
+                if ($newSubStock >= $needed) {
+                    $newSubStock -= $needed;
+                } else {
+                    $deficit = $needed - $newSubStock;
+                    $boxesToOpen = (int) ceil($deficit / $stock->sub_unit_multiplier);
+
+                    if ($newMainStock < $boxesToOpen) {
+                        return false; 
+                    }
+
+                    $newMainStock -= $boxesToOpen;
+                    $newSubStock = $newSubStock + ($boxesToOpen * $stock->sub_unit_multiplier) - $needed;
+                }
+            } else {
+                if ($stock->available_stock < $quantity) {
+                    return false;
+                }
+                $newMainStock -= $quantity;
+            }
+
+            $updateData = [
+                'current_stock' => $newMainStock,
+                'available_stock' => $newMainStock - $stock->reserved_stock,
                 'internal_usage_count' => $stock->internal_usage_count + $quantity
-            ]);
+            ];
 
-            // İşlem kaydı oluştur
+            if ($isSubUnitUsage) {
+                $updateData['current_sub_stock'] = $newSubStock;
+            }
+
+            $this->stockRepository->update($stockId, $updateData);
+
             $this->createTransaction([
                 'stock_id' => $stockId,
                 'clinic_id' => $stock->clinic_id,
                 'type' => 'usage',
                 'quantity' => $quantity,
-                'previous_stock' => $previousStock,
-                'new_stock' => $newStock,
+                'previous_stock' => $isSubUnitUsage ? $stock->total_base_units : $stock->current_stock,
+                'new_stock' => $isSubUnitUsage ? 
+                    (($newMainStock * $stock->sub_unit_multiplier) + $newSubStock) : 
+                    $newMainStock,
                 'notes' => $notes,
                 'performed_by' => $performedBy,
                 'transaction_date' => now()
             ]);
 
-            // Stok seviyesi kontrolü
             $this->checkStockLevels($stock->fresh());
 
             return true;
@@ -234,7 +264,8 @@ class StockService
                     'status' => 'deleted',
                     'is_active' => false,
                     'current_stock' => 0,
-                    'available_stock' => 0
+                    'available_stock' => 0,
+                    'current_sub_stock' => 0
                 ]);
 
                 return true; // Başarılı olarak döndür
