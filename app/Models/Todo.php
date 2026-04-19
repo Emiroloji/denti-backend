@@ -3,16 +3,20 @@
 
 namespace App\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 
 class Todo extends Model
 {
+    use Tenantable;
+
     protected $fillable = [
         'title',
         'description',
         'completed',
         'completed_at',
-        'category_id'  // YENİ EKLENEN!
+        'category_id',
+        'company_id'
     ];
 
     protected $casts = [

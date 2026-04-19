@@ -3,14 +3,14 @@
 
 namespace App\Modules\Stock\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stock extends Model
 {
-    use SoftDeletes;
+    use Tenantable;
 
     protected $fillable = [
         'name', 'code', 'description', 'unit', 'category', 'brand',
@@ -20,7 +20,8 @@ class Stock extends Model
         'yellow_alert_level', 'red_alert_level',
         'internal_usage_count', 'status', 'is_active', 'track_expiry', 'track_batch',
         'clinic_id', 'storage_location',
-        'has_sub_unit', 'sub_unit_name', 'sub_unit_multiplier', 'current_sub_stock'
+        'has_sub_unit', 'sub_unit_name', 'sub_unit_multiplier', 'current_sub_stock',
+        'company_id'
     ];
 
     protected $casts = [
@@ -78,19 +79,12 @@ class Stock extends Model
     // Scope'lar
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)
-                    ->where('status', '!=', 'deleted');
+        return $query->where('is_active', true);
     }
 
     public function scopeInactive($query)
     {
-        return $query->where('is_active', false)
-                    ->where('status', '!=', 'deleted');
-    }
-
-    public function scopeDeleted($query)
-    {
-        return $query->where('status', 'deleted');
+        return $query->where('is_active', false);
     }
 
     public function scopeLowStock($query)
@@ -139,7 +133,6 @@ class Stock extends Model
 
     public function getStockStatusAttribute()
     {
-        if ($this->status === 'deleted') return 'deleted';
         if (!$this->is_active) return 'inactive';
         
         $total = $this->total_base_units;
@@ -149,11 +142,6 @@ class Stock extends Model
         if ($total <= $redLevel) return 'critical';
         if ($total <= $yellowLevel) return 'low';
         return 'normal';
-    }
-
-    public function getIsDeletedAttribute()
-    {
-        return $this->status === 'deleted' || $this->deleted_at !== null;
     }
 
     public function getIsExpiredAttribute()

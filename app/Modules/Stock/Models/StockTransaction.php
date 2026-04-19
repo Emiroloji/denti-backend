@@ -7,17 +7,20 @@
 
 namespace App\Modules\Stock\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockTransaction extends Model
 {
+    use Tenantable;
+
     protected $fillable = [
         'transaction_number', 'stock_id', 'clinic_id', 'type',
         'quantity', 'previous_stock', 'new_stock',
         'unit_price', 'total_price', 'stock_request_id',
         'reference_number', 'batch_number', 'description',
-        'notes', 'performed_by', 'transaction_date'
+        'notes', 'performed_by', 'transaction_date', 'company_id'
     ];
 
     protected $casts = [

@@ -79,6 +79,12 @@ class StockAlertRepository implements StockAlertRepositoryInterface
                    ]);
     }
 
+    public function deleteActiveAlerts(int $stockId): void
+    {
+        $this->model->where('stock_id', $stockId)
+                   ->delete();
+    }
+
     public function countActiveAlerts(int $clinicId = null): int
     {
         $query = $this->model->active();

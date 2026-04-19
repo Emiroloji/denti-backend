@@ -1,6 +1,5 @@
 <?php
 // app/Modules/Stock/Database/Migrations/2024_12_15_000003_create_stocks_table.php
-// Bu dosyayı şu kodla değiştir:
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -21,7 +20,7 @@ return new class extends Migration {
             // Tedarikçi bilgileri
             $table->foreignId('supplier_id')->constrained()->onDelete('restrict');
             $table->decimal('purchase_price', 10, 2)->nullable();
-            $table->string('currency', 10)->default('TRY'); // ✅ EKLENDİ
+            $table->string('currency', 10)->default('TRY');
             $table->date('purchase_date')->nullable();
             $table->date('expiry_date')->nullable();
 
@@ -39,9 +38,9 @@ return new class extends Migration {
             // İç kullanım
             $table->integer('internal_usage_count')->default(0);
 
-            // Durum - ✅ ENUM GENİŞLETİLDİ + is_active EKLENDİ
-            $table->enum('status', ['active', 'inactive', 'discontinued', 'deleted'])->default('active');
-            $table->boolean('is_active')->default(true); // ✅ EKLENDİ
+            // Durum
+            $table->enum('status', ['active', 'inactive', 'discontinued'])->default('active');
+            $table->boolean('is_active')->default(true);
             $table->boolean('track_expiry')->default(true);
             $table->boolean('track_batch')->default(false);
 
@@ -50,7 +49,6 @@ return new class extends Migration {
             $table->string('storage_location')->nullable();
 
             $table->timestamps();
-            $table->softDeletes(); // ✅ SOFT DELETE EKLENDİ
 
             // İndeksler
             $table->index(['name', 'status']);
@@ -58,8 +56,8 @@ return new class extends Migration {
             $table->index(['supplier_id']);
             $table->index(['expiry_date']);
             $table->index(['current_stock', 'min_stock_level']);
-            $table->index(['is_active']); // ✅ YENİ İNDEKS
-            $table->index(['status', 'is_active']); // ✅ YENİ COMPOSİTE İNDEKS
+            $table->index(['is_active']);
+            $table->index(['status', 'is_active']);
         });
     }
 

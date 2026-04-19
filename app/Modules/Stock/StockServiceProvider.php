@@ -43,7 +43,7 @@ class StockServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // Routes yükleme
+        // Routes yükleme - Sadeleştirildi, Laravel 11 otomatik prefix kullanıyor olabilir
         $this->loadRoutesFrom(__DIR__ . '/Routes/api.php');
 
         // Migrations yükleme

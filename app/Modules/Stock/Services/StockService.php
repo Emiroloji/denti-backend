@@ -210,31 +210,14 @@ class StockService
             $stock = $this->stockRepository->find($id);
             if (!$stock) return false;
 
-            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
-                $this->stockRepository->update($id, [
-                    'status' => 'deleted',
-                    'is_active' => false
-                ]);
-                return true;
-            }
-
+            $stock->alerts()->delete();
             return $this->stockRepository->delete($id);
         });
     }
 
     public function forceDeleteStock(int $id): bool
     {
-        return DB::transaction(function () use ($id) {
-            $stock = $this->stockRepository->find($id);
-            if (!$stock) return false;
-
-            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
-                throw new \Exception('Bu stok için işlem kayıtları mevcut. Kalıcı silme yapılamaz.');
-            }
-
-            $stock->alerts()->delete();
-            return $this->stockRepository->delete($id);
-        });
+        return $this->deleteStock($id);
     }
 
     public function getStockStats(int $clinicId = null): array

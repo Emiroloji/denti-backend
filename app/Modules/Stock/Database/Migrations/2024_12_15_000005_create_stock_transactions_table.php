@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->string('transaction_number')->unique();
 
-            $table->foreignId('stock_id')->constrained()->onDelete('restrict');
+            $table->foreignId('stock_id')->constrained()->onDelete('cascade');
             $table->foreignId('clinic_id')->constrained()->onDelete('restrict');
 
             // İşlem tipi

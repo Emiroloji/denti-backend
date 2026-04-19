@@ -6,15 +6,19 @@
 
 namespace App\Modules\Stock\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockAlert extends Model
 {
+    use Tenantable;
+
     protected $fillable = [
         'stock_id', 'clinic_id', 'type', 'title', 'message',
         'current_stock_level', 'threshold_level', 'expiry_date',
-        'is_active', 'is_resolved', 'resolved_at', 'resolved_by'
+        'is_active', 'is_resolved', 'resolved_at', 'resolved_by',
+        'company_id'
     ];
 
     protected $casts = [

@@ -6,14 +6,17 @@
 
 namespace App\Modules\Stock\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Clinic extends Model
 {
+    use Tenantable;
+
     protected $fillable = [
         'name', 'code', 'description', 'responsible_person',
-        'phone', 'location', 'is_active'
+        'phone', 'location', 'is_active', 'company_id'
     ];
 
     protected $casts = [

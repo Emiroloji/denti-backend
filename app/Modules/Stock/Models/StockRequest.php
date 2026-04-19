@@ -6,17 +6,20 @@
 
 namespace App\Modules\Stock\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockRequest extends Model
 {
+    use Tenantable;
+
     protected $fillable = [
         'request_number', 'requester_clinic_id', 'requested_from_clinic_id',
         'stock_id', 'requested_quantity', 'approved_quantity', 'status',
         'request_reason', 'admin_notes', 'rejection_reason',
         'requested_at', 'approved_at', 'completed_at',
-        'requested_by', 'approved_by'
+        'requested_by', 'approved_by', 'company_id'
     ];
 
     protected $casts = [

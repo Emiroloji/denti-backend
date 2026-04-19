@@ -6,14 +6,18 @@
 
 namespace App\Modules\Stock\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Supplier extends Model
 {
+    use Tenantable;
+
     protected $fillable = [
         'name', 'contact_person', 'phone', 'email', 'address',
-        'tax_number', 'is_active', 'additional_info'
+        'tax_number', 'is_active', 'additional_info', 'company_id'
     ];
 
     protected $casts = [
@@ -40,6 +44,6 @@ class Supplier extends Model
     {
         return $this->stocks()
                    ->active()
-                   ->sum(\DB::raw('current_stock * purchase_price'));
+                   ->sum(DB::raw('current_stock * purchase_price'));
     }
 }

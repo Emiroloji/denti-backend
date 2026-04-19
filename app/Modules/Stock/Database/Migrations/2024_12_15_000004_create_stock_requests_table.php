@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('requested_from_clinic_id')->constrained('clinics')->onDelete('restrict');
 
             // Talep edilen stok
-            $table->foreignId('stock_id')->constrained()->onDelete('restrict');
+            $table->foreignId('stock_id')->constrained()->onDelete('cascade');
             $table->integer('requested_quantity');
             $table->integer('approved_quantity')->nullable();
 

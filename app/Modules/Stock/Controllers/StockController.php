@@ -96,7 +96,6 @@ class StockController extends Controller
         try {
             $data = $validator->validated();
 
-            // ✅ EXPLICIT DEFAULT DEĞERLER
             $data['yellow_alert_level'] = $data['yellow_alert_level'] ?? $data['min_stock_level'];
             $data['red_alert_level'] = $data['red_alert_level'] ?? $data['critical_stock_level'];
             $data['currency'] = $data['currency'] ?? 'TRY';
@@ -367,34 +366,13 @@ class StockController extends Controller
     public function forceDelete($id)
     {
         try {
-            $stock = $this->stockService->getStockById($id);
-
-            if (!$stock) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Stok bulunamadı'
-                ], 404);
-            }
-
-            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Bu stok için işlem kayıtları mevcut. Sadece pasif yapılabilir.',
-                    'data' => [
-                        'has_transactions' => $stock->transactions()->count(),
-                        'has_requests' => $stock->requests()->count(),
-                        'can_force_delete' => false
-                    ]
-                ], 400);
-            }
-
             $deleted = $this->stockService->forceDeleteStock($id);
 
             if (!$deleted) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Stok silinemedi'
-                ], 400);
+                    'message' => 'Stok bulunamadı'
+                ], 404);
             }
 
             return response()->json([
@@ -449,13 +427,6 @@ class StockController extends Controller
                     'success' => false,
                     'message' => 'Stok bulunamadı'
                 ], 404);
-            }
-
-            if ($stock->status === 'deleted') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Silinmiş stok aktif edilemez'
-                ], 400);
             }
 
             $updatedStock = $this->stockService->updateStock($id, [

@@ -3,10 +3,13 @@
 
 namespace App\Models;
 
+use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
+    use Tenantable;
+
     /**
      * Toplu atama için izin verilen alanlar
      * Bu alanlar $category->create([...]) ile doldurulabilir
@@ -15,7 +18,8 @@ class Category extends Model
         'name',
         'color',
         'description',
-        'is_active'
+        'is_active',
+        'company_id'
     ];
 
     /**

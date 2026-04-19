@@ -21,8 +21,8 @@ class StockAlertService
 
     public function checkAndCreateAlerts(Stock $stock): void
     {
-        // Mevcut aktif alarmları temizle
-        $this->resolveExistingAlerts($stock);
+        // Mevcut alarmları tamamen temizle (Yeni kural: direkt sil)
+        $this->forceDeleteAlertsByStock($stock->id);
 
         $alerts = [];
 
@@ -95,9 +95,14 @@ class StockAlertService
         return $alert;
     }
 
-    protected function resolveExistingAlerts(Stock $stock): void
+    public function resolveExistingAlerts(Stock $stock): void
     {
         $this->stockAlertRepository->resolveActiveAlerts($stock->id);
+    }
+
+    public function forceDeleteAlertsByStock(int $stockId): void
+    {
+        $this->stockAlertRepository->deleteActiveAlerts($stockId);
     }
 
     protected function sendAlertNotification(StockAlert $alert): void
@@ -106,7 +111,6 @@ class StockAlertService
         $clinic = $alert->clinic;
         if ($clinic->responsible_person) {
             // Burada notification gönderilebilir
-            // Notification::send($users, new StockLowLevelNotification($alert));
         }
     }
 
@@ -142,9 +146,9 @@ class StockAlertService
 
     public function dismissAlert(int $alertId): bool
     {
-        return (bool) $this->stockAlertRepository->update($alertId, [
-            'is_active' => false
-        ]);
+        // Dismiss de artık direkt silebilir istersen ama genelde yoksayma pasife çekmektir.
+        // Ancak talep "direkt silinsin" olduğu için bunu da delete'e çekebiliriz.
+        return $this->deleteAlert($alertId);
     }
 
     public function deleteAlert(int $alertId): bool
