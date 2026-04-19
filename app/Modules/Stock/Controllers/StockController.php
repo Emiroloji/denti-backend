@@ -32,7 +32,6 @@ class StockController extends Controller
         ]);
     }
 
-
     public function show($id)
     {
         try {
@@ -57,6 +56,70 @@ class StockController extends Controller
         }
     }
 
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|unique:stocks,code',
+            'description' => 'nullable|string',
+            'unit' => 'required|string|max:50',
+            'category' => 'nullable|string|max:100',
+            'brand' => 'nullable|string|max:100',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'clinic_id' => 'required|exists:clinics,id',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'currency' => 'nullable|string|max:10',
+            'purchase_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date|after:today',
+            'current_stock' => 'required|integer|min:0',
+            'min_stock_level' => 'required|integer|min:0',
+            'critical_stock_level' => 'required|integer|min:0',
+            'yellow_alert_level' => 'nullable|integer|min:0',
+            'red_alert_level' => 'nullable|integer|min:0',
+            'track_expiry' => 'boolean',
+            'track_batch' => 'boolean',
+            'storage_location' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
+            'has_sub_unit' => 'boolean',
+            'sub_unit_name' => 'nullable|required_if:has_sub_unit,true|string|max:50',
+            'sub_unit_multiplier' => 'nullable|required_if:has_sub_unit,true|integer|min:1',
+            'current_sub_stock' => 'nullable|integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $data = $validator->validated();
+
+            // ✅ EXPLICIT DEFAULT DEĞERLER
+            $data['yellow_alert_level'] = $data['yellow_alert_level'] ?? $data['min_stock_level'];
+            $data['red_alert_level'] = $data['red_alert_level'] ?? $data['critical_stock_level'];
+            $data['currency'] = $data['currency'] ?? 'TRY';
+            $data['is_active'] = $data['is_active'] ?? true;
+            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
+            $data['track_expiry'] = $data['track_expiry'] ?? true;
+            $data['track_batch'] = $data['track_batch'] ?? false;
+
+            $stock = $this->stockService->createStock($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stok başarıyla oluşturuldu',
+                'data' => $stock
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -77,7 +140,11 @@ class StockController extends Controller
             'track_expiry' => 'boolean',
             'track_batch' => 'boolean',
             'storage_location' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'has_sub_unit' => 'boolean',
+            'sub_unit_name' => 'nullable|required_if:has_sub_unit,true|string|max:50',
+            'sub_unit_multiplier' => 'nullable|required_if:has_sub_unit,true|integer|min:1',
+            'current_sub_stock' => 'nullable|integer|min:0'
         ]);
 
         if ($validator->fails()) {
@@ -90,7 +157,6 @@ class StockController extends Controller
         try {
             $data = $validator->validated();
 
-            // Update status based on is_active if provided
             if (isset($data['is_active'])) {
                 $data['status'] = $data['is_active'] ? 'active' : 'inactive';
             }
@@ -148,7 +214,8 @@ class StockController extends Controller
             'quantity' => 'required|integer|min:1',
             'reason' => 'required|string|max:500',
             'performed_by' => 'required|string|max:255',
-            'notes' => 'nullable|string|max:1000'
+            'notes' => 'nullable|string|max:1000',
+            'is_sub_unit' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -161,12 +228,14 @@ class StockController extends Controller
         try {
             $data = $validator->validated();
             $quantity = $data['type'] === 'increase' ? $data['quantity'] : -$data['quantity'];
+            $isSubUnit = $data['is_sub_unit'] ?? false;
 
             $result = $this->stockService->adjustStock(
                 $id,
                 $quantity,
                 $data['reason'],
-                $data['performed_by']
+                $data['performed_by'],
+                $isSubUnit
             );
 
             if (!$result) {
@@ -243,7 +312,6 @@ class StockController extends Controller
         }
     }
 
-    // ✅ ENDPOINT ADLARI DÜZELTİLDİ - Frontend ile uyumlu
     public function getLowLevel(Request $request)
     {
         $clinicId = $request->query('clinic_id');
@@ -278,7 +346,6 @@ class StockController extends Controller
         ]);
     }
 
-    // ✅ YENİ ENDPOINT EKLENDİ - Frontend'in ihtiyaç duyduğu
     public function getStats(Request $request)
     {
         try {
@@ -297,22 +364,6 @@ class StockController extends Controller
         }
     }
 
-    // eski method'ları uyumluluk için tut
-    public function getLowStockItems(Request $request)
-    {
-        return $this->getLowLevel($request);
-    }
-
-    public function getCriticalStockItems(Request $request)
-    {
-        return $this->getCriticalLevel($request);
-    }
-
-    public function getExpiringItems(Request $request)
-    {
-        return $this->getExpiring($request);
-    }
-
     public function forceDelete($id)
     {
         try {
@@ -325,7 +376,6 @@ class StockController extends Controller
                 ], 404);
             }
 
-            // İşlem kayıtları varsa hard delete yapma
             if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
                 return response()->json([
                     'success' => false,
@@ -358,39 +408,37 @@ class StockController extends Controller
             ], 400);
         }
     }
+
     public function deactivate($id)
-        {
-            try {
-                $stock = $this->stockService->getStockById($id);
+    {
+        try {
+            $stock = $this->stockService->getStockById($id);
 
-                if (!$stock) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Stok bulunamadı'
-                    ], 404);
-                }
-
-                $updatedStock = $this->stockService->updateStock($id, [
-                    'is_active' => false,
-                    'status' => 'inactive'
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Stok pasif duruma getirildi',
-                    'data' => $updatedStock
-                ]);
-            } catch (\Exception $e) {
+            if (!$stock) {
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage()
-                ], 400);
+                    'message' => 'Stok bulunamadı'
+                ], 404);
             }
-        }
 
-    /**
-     * Reactivate (Tekrar aktif et)
-     */
+            $updatedStock = $this->stockService->updateStock($id, [
+                'is_active' => false,
+                'status' => 'inactive'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stok pasif duruma getirildi',
+                'data' => $updatedStock
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
     public function reactivate($id)
     {
         try {
@@ -427,65 +475,4 @@ class StockController extends Controller
             ], 400);
         }
     }
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:stocks,code',
-            'description' => 'nullable|string',
-            'unit' => 'required|string|max:50',
-            'category' => 'nullable|string|max:100',
-            'brand' => 'nullable|string|max:100',
-            'supplier_id' => 'required|exists:suppliers,id',
-            'clinic_id' => 'required|exists:clinics,id',
-            'purchase_price' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|max:10',
-            'purchase_date' => 'nullable|date',
-            'expiry_date' => 'nullable|date|after:today',
-            'current_stock' => 'required|integer|min:0',
-            'min_stock_level' => 'required|integer|min:0',
-            'critical_stock_level' => 'required|integer|min:0',
-            'yellow_alert_level' => 'nullable|integer|min:0',
-            'red_alert_level' => 'nullable|integer|min:0',
-            'track_expiry' => 'boolean',
-            'track_batch' => 'boolean',
-            'storage_location' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $data = $validator->validated();
-
-            // ✅ EXPLICIT DEFAULT DEĞERLER
-            $data['yellow_alert_level'] = $data['yellow_alert_level'] ?? $data['min_stock_level'];
-            $data['red_alert_level'] = $data['red_alert_level'] ?? $data['critical_stock_level'];
-            $data['currency'] = $data['currency'] ?? 'TRY';
-            $data['is_active'] = $data['is_active'] ?? true; // EXPLICIT TRUE
-            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
-            $data['track_expiry'] = $data['track_expiry'] ?? true;
-            $data['track_batch'] = $data['track_batch'] ?? false;
-
-            $stock = $this->stockService->createStock($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Stok başarıyla oluşturuldu',
-                'data' => $stock
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
-    }
-
-
 }

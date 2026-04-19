@@ -99,7 +99,7 @@ class Stock extends Model
             (CASE 
                 WHEN has_sub_unit = 1 THEN (current_stock * COALESCE(sub_unit_multiplier, 1)) + current_sub_stock 
                 ELSE current_stock 
-             END) <= yellow_alert_level
+             END) <= COALESCE(yellow_alert_level, min_stock_level)
         ')->where('is_active', true);
     }
 
@@ -109,7 +109,7 @@ class Stock extends Model
             (CASE 
                 WHEN has_sub_unit = 1 THEN (current_stock * COALESCE(sub_unit_multiplier, 1)) + current_sub_stock 
                 ELSE current_stock 
-             END) <= red_alert_level
+             END) <= COALESCE(red_alert_level, critical_stock_level)
         ')->where('is_active', true);
     }
 
@@ -143,8 +143,11 @@ class Stock extends Model
         if (!$this->is_active) return 'inactive';
         
         $total = $this->total_base_units;
-        if ($total <= $this->red_alert_level) return 'critical';
-        if ($total <= $this->yellow_alert_level) return 'low';
+        $redLevel = $this->red_alert_level ?? $this->critical_stock_level;
+        $yellowLevel = $this->yellow_alert_level ?? $this->min_stock_level;
+
+        if ($total <= $redLevel) return 'critical';
+        if ($total <= $yellowLevel) return 'low';
         return 'normal';
     }
 

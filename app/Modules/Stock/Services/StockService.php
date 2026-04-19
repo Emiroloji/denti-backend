@@ -23,13 +23,10 @@ class StockService
         return $this->stockRepository->getAllWithFilters($filters);
     }
 
-    // ✅ EKSİK METHOD EKLENDİ - Ana sorunun çözümü
     public function getStockById(int $id): ?Stock
     {
         return $this->stockRepository->find($id);
     }
-
-
 
     public function updateStock(int $id, array $data): ?Stock
     {
@@ -37,7 +34,7 @@ class StockService
             $stock = $this->stockRepository->find($id);
             if (!$stock) return null;
 
-            // Kullanılabilir stok güncelle
+            // Kullanılabilir stok güncelle (Ana birim cinsinden)
             if (isset($data['current_stock']) || isset($data['reserved_stock'])) {
                 $currentStock = $data['current_stock'] ?? $stock->current_stock;
                 $reservedStock = $data['reserved_stock'] ?? $stock->reserved_stock;
@@ -46,7 +43,6 @@ class StockService
 
             $updatedStock = $this->stockRepository->update($id, $data);
 
-            // Stok seviyesi kontrolü
             if ($updatedStock) {
                 $this->checkStockLevels($updatedStock);
             }
@@ -55,38 +51,61 @@ class StockService
         });
     }
 
-
-
-    public function adjustStock(int $stockId, int $quantity, string $reason, string $performedBy): bool
+    public function adjustStock(int $stockId, int $quantity, string $reason, string $performedBy, bool $isSubUnit = false): bool
     {
-        return DB::transaction(function () use ($stockId, $quantity, $reason, $performedBy) {
+        return DB::transaction(function () use ($stockId, $quantity, $reason, $performedBy, $isSubUnit) {
             $stock = $this->stockRepository->find($stockId);
             if (!$stock) return false;
 
-            $previousStock = $stock->current_stock;
-            $newStock = $previousStock + $quantity;
+            $previousTotal = $stock->total_base_units;
+            
+            if ($isSubUnit && $stock->has_sub_unit) {
+                // Alt birim düzeltmesi
+                $newSubStock = $stock->current_sub_stock + $quantity;
+                $newMainStock = $stock->current_stock;
 
-            // Stok güncelle
-            $this->stockRepository->update($stockId, [
-                'current_stock' => $newStock,
-                'available_stock' => $newStock - $stock->reserved_stock
-            ]);
+                if ($newSubStock >= $stock->sub_unit_multiplier) {
+                    $boxesToAdd = (int) floor($newSubStock / $stock->sub_unit_multiplier);
+                    $newMainStock += $boxesToAdd;
+                    $newSubStock = $newSubStock % $stock->sub_unit_multiplier;
+                } elseif ($newSubStock < 0) {
+                    $boxesToTake = (int) ceil(abs($newSubStock) / $stock->sub_unit_multiplier);
+                    if ($newMainStock < $boxesToTake) return false; 
+                    $newMainStock -= $boxesToTake;
+                    $newSubStock = ($boxesToTake * $stock->sub_unit_multiplier) + $newSubStock;
+                }
 
-            // İşlem kaydı oluştur
+                $this->stockRepository->update($stockId, [
+                    'current_stock' => $newMainStock,
+                    'current_sub_stock' => $newSubStock,
+                    'available_stock' => $newMainStock - $stock->reserved_stock
+                ]);
+            } else {
+                // Ana birim düzeltmesi
+                $newStock = $stock->current_stock + $quantity;
+                if ($newStock < 0) return false;
+
+                $this->stockRepository->update($stockId, [
+                    'current_stock' => $newStock,
+                    'available_stock' => $newStock - $stock->reserved_stock
+                ]);
+            }
+
+            $freshStock = $stock->fresh();
+
             $this->createTransaction([
                 'stock_id' => $stockId,
                 'clinic_id' => $stock->clinic_id,
                 'type' => 'adjustment',
                 'quantity' => abs($quantity),
-                'previous_stock' => $previousStock,
-                'new_stock' => $newStock,
-                'description' => $reason,
+                'previous_stock' => $previousTotal,
+                'new_stock' => $freshStock->total_base_units,
+                'description' => ($isSubUnit ? "Alt Birim Düzeltme: " : "Ana Birim Düzeltme: ") . $reason,
                 'performed_by' => $performedBy,
                 'transaction_date' => now()
             ]);
 
-            // Stok seviyesi kontrolü
-            $this->checkStockLevels($stock->fresh());
+            $this->checkStockLevels($freshStock);
 
             return true;
         });
@@ -160,60 +179,64 @@ class StockService
         });
     }
 
-    protected function generateStockCode(int $clinicId): string
+    public function createStock(array $data): Stock
     {
-        $clinic = app(ClinicService::class)->getClinicById($clinicId);
-        $prefix = $clinic ? $clinic->code : 'STK';
-        $sequence = $this->stockRepository->getNextSequenceNumber($clinicId);
+        return DB::transaction(function () use ($data) {
+            $data['is_active'] = $data['is_active'] ?? true;
+            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
+            $data['currency'] = $data['currency'] ?? 'TRY';
+            $data['track_expiry'] = $data['track_expiry'] ?? true;
+            $data['track_batch'] = $data['track_batch'] ?? false;
+            $data['current_sub_stock'] = $data['current_sub_stock'] ?? 0;
+            $data['has_sub_unit'] = $data['has_sub_unit'] ?? false;
 
-        return $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+            if (!isset($data['code'])) {
+                $data['code'] = $this->generateStockCode($data['clinic_id']);
+            }
+
+            $data['available_stock'] = $data['current_stock'] - ($data['reserved_stock'] ?? 0);
+
+            $stock = $this->stockRepository->create($data);
+
+            $this->checkStockLevels($stock);
+
+            return $stock;
+        });
     }
 
-    protected function checkStockLevels(Stock $stock): void
+    public function deleteStock(int $id): bool
     {
-        // Job olarak çalıştır (async)
-        CheckStockLevelsJob::dispatch($stock);
+        return DB::transaction(function () use ($id) {
+            $stock = $this->stockRepository->find($id);
+            if (!$stock) return false;
+
+            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
+                $this->stockRepository->update($id, [
+                    'status' => 'deleted',
+                    'is_active' => false
+                ]);
+                return true;
+            }
+
+            return $this->stockRepository->delete($id);
+        });
     }
 
-    protected function createTransaction(array $data): void
+    public function forceDeleteStock(int $id): bool
     {
-        // Transaction numarası oluştur
-        $data['transaction_number'] = $this->generateTransactionNumber();
+        return DB::transaction(function () use ($id) {
+            $stock = $this->stockRepository->find($id);
+            if (!$stock) return false;
 
-        app(StockTransactionService::class)->createTransaction($data);
+            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
+                throw new \Exception('Bu stok için işlem kayıtları mevcut. Kalıcı silme yapılamaz.');
+            }
+
+            $stock->alerts()->delete();
+            return $this->stockRepository->delete($id);
+        });
     }
 
-    protected function generateTransactionNumber(): string
-    {
-        $date = now()->format('Ymd');
-        $sequence = DB::table('stock_transactions')
-                     ->whereDate('created_at', now())
-                     ->count() + 1;
-
-        return 'TXN-' . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-    }
-
-    public function getLowStockItems(int $clinicId = null): Collection
-    {
-        return $this->stockRepository->getLowStockItems($clinicId);
-    }
-
-    public function getCriticalStockItems(int $clinicId = null): Collection
-    {
-        return $this->stockRepository->getCriticalStockItems($clinicId);
-    }
-
-    public function getExpiringItems(int $days = 30, int $clinicId = null): Collection
-    {
-        return $this->stockRepository->getExpiringItems($days, $clinicId);
-    }
-
-    public function getExpiredItems(int $clinicId = null): Collection
-    {
-        return $this->stockRepository->getExpiredItems($clinicId);
-    }
-
-    // ✅ YENİ METHOD EKLENDİ - Frontend'in ihtiyaç duyduğu stats
     public function getStockStats(int $clinicId = null): array
     {
         $baseQuery = $this->stockRepository->getBaseQuery();
@@ -237,99 +260,53 @@ class StockService
         ];
     }
 
-
-
-
-    /**
-     * Get all stocks including inactive and deleted
-     */
-    public function getAllStocksWithInactive(array $filters = []): Collection
+    public function getLowStockItems(int $clinicId = null): Collection
     {
-        return $this->stockRepository->getAllWithFiltersIncludingInactive($filters);
+        return $this->stockRepository->getLowStockItems($clinicId);
     }
 
-    /**
-     * ✅ DELETE METODUNU DÜZELTELİM - Soft delete mantığı
-     */
-    public function deleteStock(int $id): bool
+    public function getCriticalStockItems(int $clinicId = null): Collection
     {
-        return DB::transaction(function () use ($id) {
-            $stock = $this->stockRepository->find($id);
-            if (!$stock) return false;
-
-            // İşlem kayıtları varsa soft delete yap
-            if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
-                // Soft delete - sadece pasif yap
-                $this->stockRepository->update($id, [
-                    'status' => 'deleted',
-                    'is_active' => false,
-                    'current_stock' => 0,
-                    'available_stock' => 0,
-                    'current_sub_stock' => 0
-                ]);
-
-                return true; // Başarılı olarak döndür
-            }
-
-            // İşlem kaydı yoksa gerçek silme
-            return $this->stockRepository->delete($id);
-        });
+        return $this->stockRepository->getCriticalStockItems($clinicId);
     }
 
-    /**
-     * ✅ CREATE METODUNU DÜZELTELİM
-     */
-    public function createStock(array $data): Stock
+    public function getExpiringItems(int $days = 30, int $clinicId = null): Collection
     {
-        return DB::transaction(function () use ($data) {
-            // ✅ EXPLICIT DEFAULT DEĞERLER
-            $data['is_active'] = $data['is_active'] ?? true;
-            $data['status'] = $data['is_active'] ? 'active' : 'inactive';
-            $data['currency'] = $data['currency'] ?? 'TRY';
-            $data['track_expiry'] = $data['track_expiry'] ?? true;
-            $data['track_batch'] = $data['track_batch'] ?? false;
-
-            // Stok kodu otomatik oluştur
-            if (!isset($data['code'])) {
-                $data['code'] = $this->generateStockCode($data['clinic_id']);
-            }
-
-            // Kullanılabilir stok hesapla
-            $data['available_stock'] = $data['current_stock'] - ($data['reserved_stock'] ?? 0);
-
-            // Debug için log
-            \Log::info('StockService createStock:', [
-                'is_active' => $data['is_active'],
-                'status' => $data['status'],
-                'name' => $data['name']
-            ]);
-
-            $stock = $this->stockRepository->create($data);
-
-            // Stok seviyesi kontrolü
-            $this->checkStockLevels($stock);
-
-            return $stock;
-        });
-
-
+        return $this->stockRepository->getExpiringItems($days, $clinicId);
     }
-    public function forceDeleteStock(int $id): bool
-        {
-            return DB::transaction(function () use ($id) {
-                $stock = $this->stockRepository->find($id);
-                if (!$stock) return false;
 
-                // İşlem kayıtları kontrolü
-                if ($stock->transactions()->count() > 0 || $stock->requests()->count() > 0) {
-                    throw new \Exception('Bu stok için işlem kayıtları mevcut. Kalıcı silme yapılamaz.');
-                }
+    public function getExpiredItems(int $clinicId = null): Collection
+    {
+        return $this->stockRepository->getExpiredItems($clinicId);
+    }
 
-                // Alerts'leri de sil
-                $stock->alerts()->delete();
+    protected function generateStockCode(int $clinicId): string
+    {
+        $clinic = app(ClinicService::class)->getClinicById($clinicId);
+        $prefix = $clinic ? $clinic->code : 'STK';
+        $sequence = $this->stockRepository->getNextSequenceNumber($clinicId);
 
-                // Gerçek silme
-                return $this->stockRepository->delete($id);
-            });
-        }
+        return $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+    }
+
+    protected function checkStockLevels(Stock $stock): void
+    {
+        CheckStockLevelsJob::dispatch($stock);
+    }
+
+    protected function createTransaction(array $data): void
+    {
+        $data['transaction_number'] = $this->generateTransactionNumber();
+        app(StockTransactionService::class)->createTransaction($data);
+    }
+
+    protected function generateTransactionNumber(): string
+    {
+        $date = now()->format('Ymd');
+        $sequence = DB::table('stock_transactions')
+                     ->whereDate('created_at', now())
+                     ->count() + 1;
+
+        return 'TXN-' . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+    }
 }
