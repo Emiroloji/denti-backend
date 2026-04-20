@@ -20,4 +20,5 @@ interface ClinicRepositoryInterface
     public function getActive(): Collection;
     public function findByCode(string $code): ?Clinic;
     public function getStockSummary(int $clinicId): array;
+    public function getGlobalStats(): array;
 }

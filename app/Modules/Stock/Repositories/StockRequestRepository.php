@@ -91,4 +91,15 @@ class StockRequestRepository implements StockRequestRepositoryInterface
                           ->orderByDesc('requested_at')
                           ->get();
     }
+
+    public function getStats(): array
+    {
+        return [
+            'total' => $this->model->count(),
+            'pending' => $this->model->where('status', 'pending')->count(),
+            'approved' => $this->model->where('status', 'approved')->count(),
+            'completed' => $this->model->where('status', 'completed')->count(),
+            'rejected' => $this->model->where('status', 'rejected')->count(),
+        ];
+    }
 }

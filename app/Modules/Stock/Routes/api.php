@@ -47,6 +47,7 @@ Route::prefix('api')->middleware(['api', 'auth:sanctum'])->group(function () {
         Route::get('/', [ClinicController::class, 'index']);
         Route::post('/', [ClinicController::class, 'store']);
         Route::get('/active/list', [ClinicController::class, 'getActive']);
+        Route::get('/stats', [ClinicController::class, 'getStats']);
         Route::get('/{id}', [ClinicController::class, 'show']);
         Route::put('/{id}', [ClinicController::class, 'update']);
         Route::delete('/{id}', [ClinicController::class, 'destroy']);
@@ -59,6 +60,7 @@ Route::prefix('api')->middleware(['api', 'auth:sanctum'])->group(function () {
         Route::get('/', [StockRequestController::class, 'index']);
         Route::post('/', [StockRequestController::class, 'store']);
         Route::get('/pending/list', [StockRequestController::class, 'getPendingRequests']);
+        Route::get('/stats', [StockRequestController::class, 'getStats']);
         Route::get('/{id}', [StockRequestController::class, 'show']);
         Route::put('/{id}/approve', [StockRequestController::class, 'approve']);
         Route::put('/{id}/reject', [StockRequestController::class, 'reject']);

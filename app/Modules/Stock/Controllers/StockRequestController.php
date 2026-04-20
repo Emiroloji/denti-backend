@@ -74,7 +74,7 @@ class StockRequestController extends Controller
 
     public function show($id)
     {
-        $request = $this->stockRequestService->getRequestById($id);
+        $request = $this->stockRequestService->getRequestById((int)$id);
 
         if (!$request) {
             return response()->json([
@@ -106,7 +106,7 @@ class StockRequestController extends Controller
 
         try {
             $result = $this->stockRequestService->approveRequest(
-                $id,
+                (int)$id,
                 $validator->validated()['approved_quantity'],
                 $validator->validated()['approved_by'],
                 $validator->validated()['notes'] ?? null
@@ -147,7 +147,7 @@ class StockRequestController extends Controller
 
         try {
             $result = $this->stockRequestService->rejectRequest(
-                $id,
+                (int)$id,
                 $validator->validated()['rejection_reason'],
                 $validator->validated()['rejected_by']
             );
@@ -186,7 +186,7 @@ class StockRequestController extends Controller
 
         try {
             $result = $this->stockRequestService->completeRequest(
-                $id,
+                (int)$id,
                 $validator->validated()['performed_by']
             );
 
@@ -217,6 +217,16 @@ class StockRequestController extends Controller
         return response()->json([
             'success' => true,
             'data' => $requests
+        ]);
+    }
+
+    public function getStats()
+    {
+        $stats = $this->stockRequestService->getRequestStats();
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
         ]);
     }
 }

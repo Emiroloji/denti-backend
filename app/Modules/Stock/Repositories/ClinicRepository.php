@@ -87,4 +87,27 @@ class ClinicRepository implements ClinicRepositoryInterface
             'critical_stock_items' => $summary->critical_stock_items ?? 0,
         ];
     }
+
+    public function getGlobalStats(): array
+    {
+        $totalClinics = $this->model->count();
+        $activeClinics = $this->model->where('is_active', true)->count();
+        
+        $stockStats = DB::table('stocks')
+            ->where('status', 'active')
+            ->selectRaw('
+                COUNT(*) as total_items,
+                SUM(CASE WHEN current_stock <= yellow_alert_level THEN 1 ELSE 0 END) as low_stock_items,
+                SUM(CASE WHEN current_stock <= red_alert_level THEN 1 ELSE 0 END) as critical_stock_items
+            ')
+            ->first();
+
+        return [
+            'total_clinics' => $totalClinics,
+            'active_clinics' => $activeClinics,
+            'total_stock_items' => $stockStats->total_items ?? 0,
+            'low_stock_items' => $stockStats->low_stock_items ?? 0,
+            'critical_stock_items' => $stockStats->critical_stock_items ?? 0,
+        ];
+    }
 }

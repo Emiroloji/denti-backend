@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use PragmaRX\Google2FALaravel\Support\Authenticator;
 use PragmaRX\Google2FA\Google2FA;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -33,7 +34,7 @@ class AuthController extends Controller
             // If 2FA is enabled but not verified yet for this session
             if ($user->two_factor_confirmed_at) {
                 // Return a special status so the frontend knows to show the 2FA input
-                // We keep the user logged in but the frontend should restrict access 
+                // We keep the user logged in but the frontend should restrict access
                 // until verify2FA is called.
                 return $this->success([
                     'two_factor_required' => true,
@@ -138,7 +139,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load(['company', 'roles']);
-        
+
         return $this->success([
             'user' => $user,
             'roles' => $user->getRoleNames(),
@@ -152,7 +153,7 @@ class AuthController extends Controller
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return $this->success(null, 'Logged out successfully');
     }
 }

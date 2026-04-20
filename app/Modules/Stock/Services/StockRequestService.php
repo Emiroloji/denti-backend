@@ -273,4 +273,9 @@ class StockRequestService
     {
         return $this->stockRequestRepository->getRequestsByClinic($clinicId, $type);
     }
+
+    public function getRequestStats(): array
+    {
+        return $this->stockRequestRepository->getStats();
+    }
 }

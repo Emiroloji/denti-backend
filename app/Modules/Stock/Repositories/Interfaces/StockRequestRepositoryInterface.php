@@ -20,4 +20,5 @@ interface StockRequestRepositoryInterface
     public function getPendingRequests(int $clinicId = null): Collection;
     public function getRequestsByClinic(int $clinicId, string $type = 'all'): Collection;
     public function getRequestsByStatus(string $status): Collection;
+    public function getStats(): array;
 }

@@ -60,6 +60,11 @@ class ClinicService
         return $this->clinicRepository->getStockSummary($clinicId);
     }
 
+    public function getClinicStats(): array
+    {
+        return $this->clinicRepository->getGlobalStats();
+    }
+
     protected function generateClinicCode(string $name): string
     {
         // İlk 3 harfi al ve büyük harfe çevir

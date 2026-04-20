@@ -159,6 +159,16 @@ class ClinicController extends Controller
         ]);
     }
 
+    public function getStats()
+    {
+        $stats = $this->clinicService->getClinicStats();
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+    }
+
     public function getStocks($id)
     {
         $clinic = $this->clinicService->getClinicById($id);
