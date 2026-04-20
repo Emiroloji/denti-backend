@@ -274,7 +274,7 @@ class StockService
 
     protected function checkStockLevels(Stock $stock): void
     {
-        CheckStockLevelsJob::dispatch($stock);
+        CheckStockLevelsJob::dispatch($stock->id, $stock->company_id);
     }
 
     protected function createTransaction(array $data): void

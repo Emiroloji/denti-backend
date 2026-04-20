@@ -14,15 +14,23 @@ class CheckStockLevelsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $stock;
+    protected $stockId;
+    protected $companyId;
 
-    public function __construct(Stock $stock)
+    public function __construct(int $stockId, int $companyId)
     {
-        $this->stock = $stock;
+        $this->stockId = $stockId;
+        $this->companyId = $companyId;
     }
 
     public function handle(StockAlertService $stockAlertService)
     {
-        $stockAlertService->checkAndCreateAlerts($this->stock);
+        $stock = Stock::withoutGlobalScopes()
+            ->where('company_id', $this->companyId)
+            ->find($this->stockId);
+
+        if ($stock) {
+            $stockAlertService->checkAndCreateAlerts($stock);
+        }
     }
 }

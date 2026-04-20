@@ -22,6 +22,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile/info', [ProfileController::class, 'updateInfo']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
+    // 2FA Routes
+    Route::post('/auth/2fa/generate', [AuthController::class, 'generate2FA']);
+    Route::post('/auth/2fa/confirm', [AuthController::class, 'confirm2FA']);
+    Route::post('/auth/2fa/verify', [AuthController::class, 'verify2FA']);
+
     // User Management (Employee Management)
     Route::apiResource('users', UserController::class);
 
