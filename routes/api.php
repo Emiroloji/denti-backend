@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\UserInvitationController;
 use App\Http\Controllers\Api\Admin\CompanyController;
 use App\Http\Controllers\Api\RoleController;
 
+use App\Http\Controllers\Api\UserController;
+
 // Auth Routes (Public)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/invitations/accept', [UserInvitationController::class, 'accept']);
@@ -14,6 +16,9 @@ Route::post('/invitations/accept', [UserInvitationController::class, 'accept']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // User Management (Employee Management)
+    Route::apiResource('users', UserController::class);
 
     // Invitation Routes
     Route::post('/invitations/invite', [UserInvitationController::class, 'invite']);
