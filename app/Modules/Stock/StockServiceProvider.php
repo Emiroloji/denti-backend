@@ -43,6 +43,9 @@ class StockServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Register Observers
+        \App\Modules\Stock\Models\StockTransaction::observe(\App\Modules\Stock\Observers\StockTransactionObserver::class);
+
         // Routes yükleme - Sadeleştirildi, Laravel 11 otomatik prefix kullanıyor olabilir
         $this->loadRoutesFrom(__DIR__ . '/Routes/api.php');
 

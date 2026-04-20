@@ -21,13 +21,15 @@ class StockTransaction extends Model
         'quantity', 'previous_stock', 'new_stock',
         'unit_price', 'total_price', 'stock_request_id',
         'reference_number', 'batch_number', 'description',
-        'notes', 'performed_by', 'transaction_date', 'company_id'
+        'notes', 'performed_by', 'transaction_date', 'company_id',
+        'is_sub_unit'
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
         'transaction_date' => 'datetime',
+        'is_sub_unit' => 'boolean'
     ];
 
     public function company(): BelongsTo
