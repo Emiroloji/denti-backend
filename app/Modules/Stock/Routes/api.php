@@ -97,9 +97,10 @@ Route::prefix('api')->middleware(['api', 'auth:sanctum'])->group(function () {
         Route::get('/summary', [StockReportController::class, 'summary']);
         Route::get('/movements', [StockReportController::class, 'movements']);
         Route::get('/top-used', [StockReportController::class, 'topUsedItems']);
-        Route::get('/supplier-performance', [StockReportController::class, 'supplierPerformance']);
         Route::get('/expiry', [StockReportController::class, 'expiryReport']);
         Route::get('/clinic-comparison', [StockReportController::class, 'clinicComparison']);
-        Route::get('/custom', [StockReportController::class, 'customReport']);
+        Route::get('/trends', [StockReportController::class, 'trends']);
+        Route::get('/categories', [StockReportController::class, 'categories']);
+        Route::get('/forecast', [StockReportController::class, 'forecast']);
     });
 });

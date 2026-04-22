@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\TwoFactorAuthController;
 use App\Http\Controllers\Api\UserInvitationController;
 use App\Http\Controllers\Api\Admin\CompanyController;
 use App\Http\Controllers\Api\RoleController;
@@ -10,7 +11,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ProfileController;
 
 // Auth Routes (Public)
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:60,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/invitations/accept', [UserInvitationController::class, 'accept']);
 
 // Auth Routes (Protected)
@@ -22,10 +23,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile/info', [ProfileController::class, 'updateInfo']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
-    // 2FA Routes
-    Route::post('/auth/2fa/generate', [AuthController::class, 'generate2FA']);
-    Route::post('/auth/2fa/confirm', [AuthController::class, 'confirm2FA']);
-    Route::post('/auth/2fa/verify', [AuthController::class, 'verify2FA']);
+    // 2FA Routes (Refactored to TwoFactorAuthController)
+    Route::prefix('auth/2fa')->group(function () {
+        Route::post('/generate', [TwoFactorAuthController::class, 'generate']);
+        Route::post('/confirm', [TwoFactorAuthController::class, 'confirm'])->middleware('throttle:5,1');
+        Route::post('/verify', [TwoFactorAuthController::class, 'verify'])->middleware('throttle:5,1');
+        Route::post('/recovery-codes', [TwoFactorAuthController::class, 'regenerateRecoveryCodes'])->middleware('throttle:5,1');
+    });
 
     // User Management (Employee Management)
     Route::apiResource('users', UserController::class);
