@@ -12,7 +12,7 @@ class StoreInvitationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::check() && Auth::user()->hasRole('Company Owner');
+        return Auth::check() && Auth::user()->can('manage-users');
     }
 
     /**
@@ -22,9 +22,15 @@ class StoreInvitationRequest extends FormRequest
      */
     public function rules(): array
     {
+        $companyId = auth()->user()->company_id;
+
         return [
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|string|exists:roles,name',
+            'role' => [
+                'required',
+                'string',
+                \Illuminate\Validation\Rule::exists('roles', 'name'),
+            ],
         ];
     }
 }

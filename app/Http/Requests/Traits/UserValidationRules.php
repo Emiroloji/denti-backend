@@ -24,12 +24,7 @@ trait UserValidationRules
         return [
             'required',
             'integer',
-            Rule::exists('roles', 'id')->where(function ($query) use ($companyId) {
-                if ($companyId) {
-                    $query->where('company_id', $companyId);
-                }
-                $query->where('name', '!=', 'Super Admin');
-            }),
+            Rule::exists('roles', 'id'),
         ];
     }
 }

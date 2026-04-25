@@ -23,14 +23,24 @@ class TenantScope implements Scope
         if (Auth::check()) {
             $user = Auth::user();
             
-            // Super Admin her şeyi görebilir
-            if ($user->hasRole('Super Admin')) {
+            // 🔄 ÖNEMLİ: hasRole() veya $user->roles kullanımı içeride tekrar Role modelini sorguladığı için 
+            // ve Role modeli de Tenantable olduğu için sonsuz döngüye (recursion) giriyordu.
+            // Bu yüzden DB üzerinden doğrudan (raw) kontrol yaparak bu döngüyü kırıyoruz.
+            $isSuperAdmin = \DB::table('model_has_roles')
+                ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                ->where('model_has_roles.model_id', $user->id)
+                ->where('model_has_roles.model_type', \App\Models\User::class)
+                ->where('roles.name', 'Super Admin')
+                ->exists();
+
+            if ($isSuperAdmin) {
                 return;
             }
 
-            if ($user->company_id) {
-                $builder->where($model->getTable() . '.company_id', $user->company_id);
-            }
+            $builder->where(function ($query) use ($user, $model) {
+                $query->where($model->getTable() . '.company_id', $user->company_id)
+                      ->orWhereNull($model->getTable() . '.company_id');
+            });
         }
     }
 }

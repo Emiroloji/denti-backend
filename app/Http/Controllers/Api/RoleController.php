@@ -48,7 +48,16 @@ class RoleController extends Controller
             return 'General';
         });
 
-        return $this->success($grouped, 'Permissions retrieved successfully.');
+        // Frontend'in beklediği [ { module: '...', permissions: [] } ] formatına dönüştür
+        $formatted = [];
+        foreach ($grouped as $module => $perms) {
+            $formatted[] = [
+                'module' => $module,
+                'permissions' => $perms
+            ];
+        }
+
+        return $this->success($formatted, 'Permissions retrieved successfully.');
     }
 
     /**
@@ -62,8 +71,13 @@ class RoleController extends Controller
             'company_id' => auth()->user()->company_id,
         ]);
 
-        $userPermissions = auth()->user()->getAllPermissions()->pluck('name')->toArray();
-        $requestedPermissions = collect($request->permissions)->intersect($userPermissions)->toArray();
+        $requestedPermissions = $request->permissions;
+        
+        // Eğer Super Admin değilse, sadece kendi sahip olduğu izinleri verebilir (Güvenlik)
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $userPermissions = auth()->user()->getAllPermissions()->pluck('name')->toArray();
+            $requestedPermissions = collect($request->permissions)->intersect($userPermissions)->toArray();
+        }
 
         $role->syncPermissions($requestedPermissions);
 
@@ -99,8 +113,13 @@ class RoleController extends Controller
             'name' => $request->name,
         ]);
 
-        $userPermissions = auth()->user()->getAllPermissions()->pluck('name')->toArray();
-        $requestedPermissions = collect($request->permissions)->intersect($userPermissions)->toArray();
+        $requestedPermissions = $request->permissions;
+        
+        // Eğer Super Admin değilse, sadece kendi sahip olduğu izinleri verebilir (Güvenlik)
+        if (!auth()->user()->hasRole('Super Admin')) {
+            $userPermissions = auth()->user()->getAllPermissions()->pluck('name')->toArray();
+            $requestedPermissions = collect($request->permissions)->intersect($userPermissions)->toArray();
+        }
 
         $role->syncPermissions($requestedPermissions);
 
