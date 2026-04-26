@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\RoleController;
 
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\DashboardController;
 
 // Auth Routes (Public)
 Route::post('/login', [AuthController::class, 'login']);
@@ -17,6 +18,7 @@ Route::post('/invitations/accept', [UserInvitationController::class, 'accept']);
 // Auth Routes (Protected)
 Route::middleware(['auth:sanctum', '2fa.verified'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::get('/dashboard/stats', [DashboardController::class, 'index']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Profile Settings
