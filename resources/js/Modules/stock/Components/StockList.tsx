@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, useMemo } from 'react'
 import { Card, Form, Typography } from 'antd'
-import { useStocks } from '../Hooks/useStocks'
-import { Stock, StockFilter, StockAdjustmentRequest, StockUsageRequest } from '../Types/stock.types'
+import { useProducts, useProductDetail } from '../Hooks/useStocks'
+import { Product as Stock, StockFilter, StockAdjustmentRequest, StockUsageRequest } from '../Types/stock.types'
 
 // Component imports
 import { StockTable } from './StockTable'
@@ -34,85 +34,33 @@ export const StockList: React.FC = () => {
 
   // Hooks
   const { 
-    stocks, 
+    products: stocks, 
     isLoading, 
     refetch, 
-    softDeleteStock,      // ✅ YENİ - Pasif yap
-    hardDeleteStock,      // ✅ YENİ - Kalıcı sil
-    reactivateStock,      // ✅ YENİ - Aktif et
-    deleteStock,          // Standart Akıllı Silme
-    adjustStock, 
-    useStock: executeStockUsage,
-    isAdjusting,
-    isUsing,
-    isSoftDeleting,       // ✅ YENİ Loading state
-    isHardDeleting,       // ✅ YENİ Loading state
-    isReactivating        // ✅ YENİ Loading state
-  } = useStocks(filters)
+    createProduct,
+    isCreating
+  } = useProducts(filters)
 
-  // Silinen ürünleri gizle (Backend silinse bile history için veritabanında tutuyor)
+  // Computed data
   const activeStocks = useMemo(() => {
     if (!stocks) return []
     return stocks.filter(s => s.status !== 'deleted')
   }, [stocks])
 
-  // Computed data (manual calculations since hooks are disabled)
   const stockStats = useMemo(() => {
     if (!activeStocks) return null
-    
-    const today = new Date()
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(today.getDate() + 30)
-
     return {
       total_items: activeStocks.length,
-      low_stock_items: activeStocks.filter(s => {
-        const currentAmount = s.has_sub_unit ? (s.total_base_units || (s.current_stock * (s.sub_unit_multiplier || 1) + (s.current_sub_stock || 0))) : s.current_stock;
-        return currentAmount <= s.min_stock_level;
-      }).length,
-      critical_stock_items: activeStocks.filter(s => {
-        const currentAmount = s.has_sub_unit ? (s.total_base_units || (s.current_stock * (s.sub_unit_multiplier || 1) + (s.current_sub_stock || 0))) : s.current_stock;
-        return currentAmount <= s.critical_stock_level;
-      }).length,
-      expiring_items: activeStocks.filter(s => {
-        if (!s.expiry_date) return false
-        const expiryDate = new Date(s.expiry_date)
-        return expiryDate <= thirtyDaysFromNow && expiryDate >= today
-      }).length,
-      total_value: activeStocks.reduce((sum, s) => sum + (s.purchase_price * s.current_stock), 0)
+      low_stock_items: activeStocks.filter(s => (s as any).total_stock <= s.min_stock_level).length,
+      critical_stock_items: activeStocks.filter(s => (s as any).total_stock <= s.critical_stock_level).length,
+      expiring_items: 0, // Will be handled via alerts/reports
+      total_value: activeStocks.reduce((sum, p) => {
+        const batchesValue = (p.batches || []).reduce((bSum, b) => bSum + (b.purchase_price * b.current_stock), 0)
+        return sum + batchesValue
+      }, 0)
     }
   }, [activeStocks])
 
-  const lowStockItems = useMemo(() => {
-    if (!activeStocks) return []
-    return activeStocks.filter(s => {
-      const currentAmount = s.has_sub_unit ? (s.total_base_units || (s.current_stock * (s.sub_unit_multiplier || 1) + (s.current_sub_stock || 0))) : s.current_stock;
-      return currentAmount <= s.min_stock_level;
-    })
-  }, [activeStocks])
-
-  const criticalStockItems = useMemo(() => {
-    if (!activeStocks) return []
-    return activeStocks.filter(s => {
-      const currentAmount = s.has_sub_unit ? (s.total_base_units || (s.current_stock * (s.sub_unit_multiplier || 1) + (s.current_sub_stock || 0))) : s.current_stock;
-      return currentAmount <= s.critical_stock_level;
-    })
-  }, [activeStocks])
-
-  const expiringItems = useMemo(() => {
-    if (!activeStocks) return []
-    const today = new Date()
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(today.getDate() + 30)
-    
-    return activeStocks.filter(s => {
-      if (!s.expiry_date) return false
-      const expiryDate = new Date(s.expiry_date)
-      return expiryDate <= thirtyDaysFromNow && expiryDate >= today
-    })
-  }, [activeStocks])
-
-  // Event handlers
   const handleSearch = useCallback((value: string) => {
     setFilters(prev => ({ ...prev, search: value }))
   }, [])
@@ -131,117 +79,18 @@ export const StockList: React.FC = () => {
     setIsFormModalVisible(true)
   }, [])
 
-  // Standart Silme
-  const handleDelete = useCallback(async (id: number) => {
-    try {
-      await deleteStock(id)
-    } catch (error) {
-      console.error('Silme hatası:', error)
-    }
-  }, [deleteStock])
-
-  // ✅ YENİ HANDLER'LAR - Pasif/Aktif/Kalıcı Silme
-  const handleSoftDelete = useCallback(async (id: number) => {
-    try {
-      await softDeleteStock(id)
-    } catch (error) {
-      console.error('Soft delete hatası:', error)
-    }
-  }, [softDeleteStock])
-
-  const handleHardDelete = useCallback(async (id: number) => {
-    try {
-      await hardDeleteStock(id)
-    } catch (error) {
-      console.error('Hard delete hatası:', error)
-    }
-  }, [hardDeleteStock])
-
-  const handleReactivate = useCallback(async (id: number) => {
-    try {
-      await reactivateStock(id)
-    } catch (error) {
-      console.error('Reactivate hatası:', error)
-    }
-  }, [reactivateStock])
-
-  const handleAdjust = useCallback((stock: Stock) => {
-    setSelectedStock(stock)
-    setIsAdjustModalVisible(true)
-    adjustForm.setFieldsValue({
-      performed_by: user?.name,
-      is_sub_unit: false
-    })
-  }, [adjustForm, user])
-
-  const handleUse = useCallback((stock: Stock) => {
-    setSelectedStock(stock)
-    setIsUseModalVisible(true)
-    useForm.setFieldsValue({
-      performed_by: user?.name
-    })
-  }, [useForm, user])
-
-  const handleViewHistory = useCallback((stock: Stock) => {
-    setSelectedStock(stock)
-    setIsHistoryModalVisible(true)
-  }, [])
-
-  const onAdjustSubmit = useCallback(async (values: StockAdjustmentRequest) => {
-    if (!selectedStock) return
-    
-    try {
-      await adjustStock({ id: selectedStock.id, data: values })
-      setIsAdjustModalVisible(false)
-      setSelectedStock(null)
-      adjustForm.resetFields()
-    } catch (error) {
-      console.error('Stok ayarlama hatası:', error)
-    }
-  }, [selectedStock, adjustStock, adjustForm])
-
-  const handleStockUsage = useCallback(async (values: StockUsageRequest) => {
-    if (!selectedStock) return
-    
-    try {
-      await executeStockUsage({ id: selectedStock.id, data: values })
-      setIsUseModalVisible(false)
-      setSelectedStock(null)
-      useForm.resetFields()
-    } catch (error) {
-      console.error('Stok kullanım hatası:', error)
-    }
-  }, [selectedStock, executeStockUsage, useForm])
-
   const onFormSuccess = useCallback(() => {
     setIsFormModalVisible(false)
     setEditingStock(null)
-  }, [])
-
-  // Modal handlers
-  const handleFormModalClose = useCallback(() => setIsFormModalVisible(false), [])
-  const handleAdjustModalClose = useCallback(() => setIsAdjustModalVisible(false), [])
-  const handleUseModalClose = useCallback(() => setIsUseModalVisible(false), [])
-  const handleHistoryModalClose = useCallback(() => {
-    setIsHistoryModalVisible(false)
-    setSelectedStock(null)
-  }, [])
+    refetch()
+  }, [refetch])
 
   return (
     <div>
       <Title level={2}>Stok Yönetimi</Title>
       
-      {/* İstatistik Kartları */}
       <StockStats stats={stockStats} />
       
-      {/* Uyarı Mesajları */}
-      <StockAlerts 
-        criticalStockItems={criticalStockItems}
-        lowStockItems={lowStockItems}
-        expiringItems={expiringItems}
-      />
-      
-      {/* Filtreler */}
       <StockFilters 
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
@@ -251,47 +100,36 @@ export const StockList: React.FC = () => {
       <Card styles={{ body: { padding: 0 } }}>
         <StockTable 
           stocks={activeStocks}
-          loading={isLoading || isSoftDeleting || isHardDeleting || isReactivating}
+          loading={isLoading}
           onEdit={handleEdit}
-          onDelete={handleDelete}
-          onSoftDelete={handleSoftDelete}      // ✅ YENİ - Pasif yap
-          onHardDelete={handleHardDelete}      // ✅ YENİ - Kalıcı sil
-          onReactivate={handleReactivate}      // ✅ YENİ - Aktif et
-          onAdjust={handleAdjust}
-          onUse={handleUse}
-          onViewHistory={handleViewHistory}
+          onDelete={() => {}} // TODO: Implement product delete
+          onSoftDelete={() => {}}
+          onHardDelete={() => {}}
+          onReactivate={() => {}}
+          onAdjust={() => {}}
+          onUse={() => {}}
+          onViewHistory={() => {}}
         />
       </Card>
 
-      {/* Modal'lar */}
       <StockModals 
-        // Form Modal
         isFormModalVisible={isFormModalVisible}
         editingStock={editingStock}
-        onFormModalClose={handleFormModalClose}
+        onFormModalClose={() => setIsFormModalVisible(false)}
         onFormSuccess={onFormSuccess}
         
-        // Adjust Modal
-        isAdjustModalVisible={isAdjustModalVisible}
-        selectedStock={selectedStock}
+        isAdjustModalVisible={false}
+        selectedStock={null}
         adjustForm={adjustForm}
-        onAdjustModalClose={handleAdjustModalClose}
-        onAdjustSubmit={onAdjustSubmit}
-        isAdjusting={isAdjusting}
+        onAdjustModalClose={() => {}}
+        onAdjustSubmit={async () => {}}
+        isAdjusting={false}
         
-        // Use Modal
-        isUseModalVisible={isUseModalVisible}
+        isUseModalVisible={false}
         useForm={useForm}
-        onUseModalClose={handleUseModalClose}
-        onUseSubmit={handleStockUsage}
-        isUsing={isUsing}
-      />
-
-      {/* Geçmiş Hareketler Modal */}
-      <StockHistoryModal 
-        visible={isHistoryModalVisible}
-        stock={selectedStock}
-        onClose={handleHistoryModalClose}
+        onUseModalClose={() => {}}
+        onUseSubmit={async () => {}}
+        isUsing={false}
       />
     </div>
   )

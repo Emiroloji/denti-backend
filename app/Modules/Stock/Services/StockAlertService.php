@@ -21,40 +21,48 @@ class StockAlertService
 
     public function checkAndCreateAlerts(Stock $stock): void
     {
-        // Pasif stoklar için uyarı üretme
-        if (!$stock->is_active) {
+        // Ensure product is loaded
+        if (!$stock->relationLoaded('product')) {
+            $stock->load('product');
+        }
+
+        $product = $stock->product;
+
+        // Pasif stoklar veya ürünü olmayan stoklar için uyarı üretme
+        if (!$stock->is_active || !$product) {
             $this->forceDeleteAlertsByStock($stock->id);
             return;
         }
 
-        // Mevcut alarmları tamamen temizle (Yeni kural: direkt sil)
+        // Mevcut alarmları tamamen temizle
         $this->forceDeleteAlertsByStock($stock->id);
 
         $alerts = [];
-        $currentValue = $stock->total_base_units;
+        // Toplam ürün stoğunu kontrol et
+        $currentValue = $product->total_stock;
 
-        // Seviye değerlerini al (Null ise varsayılanlara düş)
-        $yellowLevel = $stock->yellow_alert_level ?? $stock->min_stock_level ?? 10;
-        $redLevel = $stock->red_alert_level ?? $stock->critical_stock_level ?? 5;
+        // Seviye değerlerini üründen al
+        $yellowLevel = $product->yellow_alert_level ?? $product->min_stock_level ?? 10;
+        $redLevel = $product->red_alert_level ?? $product->critical_stock_level ?? 5;
 
-        // 1. Kritik Stok Kontrolü (Öncelikli)
+        // 1. Kritik Stok Kontrolü
         if ($currentValue <= $redLevel) {
-            $unitName = $stock->has_sub_unit ? $stock->sub_unit_name : $stock->unit;
+            $unitName = $product->unit;
             $alerts[] = [
                 'type' => 'critical_stock',
                 'title' => 'Kritik Stok Seviyesi',
-                'message' => "{$stock->name} için kritik stok seviyesine ulaşıldı. Mevcut: {$currentValue} {$unitName}",
+                'message' => "{$product->name} için kritik stok seviyesine ulaşıldı. Toplam: {$currentValue} {$unitName}",
                 'current_stock_level' => $currentValue,
                 'threshold_level' => $redLevel
             ];
         }
-        // 2. Düşük Stok Kontrolü (Sadece kritik değilse)
+        // 2. Düşük Stok Kontrolü
         elseif ($currentValue <= $yellowLevel) {
-            $unitName = $stock->has_sub_unit ? $stock->sub_unit_name : $stock->unit;
+            $unitName = $product->unit;
             $alerts[] = [
                 'type' => 'low_stock',
                 'title' => 'Düşük Stok Seviyesi',
-                'message' => "{$stock->name} stok miktarı azaldı. Mevcut: {$currentValue} {$unitName}",
+                'message' => "{$product->name} stok miktarı azaldı. Toplam: {$currentValue} {$unitName}",
                 'current_stock_level' => $currentValue,
                 'threshold_level' => $yellowLevel
             ];
@@ -63,21 +71,31 @@ class StockAlertService
         // Son kullanma tarihi kontrolü
         if ($stock->track_expiry && $stock->expiry_date) {
             $daysToExpiry = now()->diffInDays($stock->expiry_date, false);
+            $redDays = $stock->expiry_red_days ?? 10;
+            $yellowDays = $stock->expiry_yellow_days ?? 30;
 
             if ($daysToExpiry < 0) {
                 // Süresi geçmiş
                 $alerts[] = [
                     'type' => 'expired',
                     'title' => 'Süresi Geçen Ürün',
-                    'message' => "{$stock->name} ürününün son kullanma tarihi geçmiştir!",
+                    'message' => "{$product->name} ürününün son kullanma tarihi geçmiştir! (Parti ID: #{$stock->id})",
                     'expiry_date' => $stock->expiry_date
                 ];
-            } elseif ($daysToExpiry <= 30) {
-                // Süresi yaklaşan
+            } elseif ($daysToExpiry <= $redDays) {
+                // Kritik süresi yaklaşan (Kırmızı)
+                $alerts[] = [
+                    'type' => 'critical_expiry',
+                    'title' => 'Kritik Son Kullanma Tarihi',
+                    'message' => "{$product->name} ürününün son kullanma tarihine çok az kaldı! Kalan: {$daysToExpiry} gün",
+                    'expiry_date' => $stock->expiry_date
+                ];
+            } elseif ($daysToExpiry <= $yellowDays) {
+                // Süresi yaklaşan (Sarı)
                 $alerts[] = [
                     'type' => 'near_expiry',
                     'title' => 'Son Kullanma Tarihi Yaklaşıyor',
-                    'message' => "{$stock->name} ürününün son kullanma tarihi yaklaşıyor. Kalan: {$daysToExpiry} gün",
+                    'message' => "{$product->name} ürününün son kullanma tarihi yaklaşıyor. Kalan: {$daysToExpiry} gün",
                     'expiry_date' => $stock->expiry_date
                 ];
             }

@@ -218,11 +218,19 @@ class StockService
     public function createStock(array $data): Stock
     {
         return DB::transaction(function () use ($data) {
+            // Hesaplanan değerler
             $data['available_stock'] = ($data['current_stock'] ?? 0) - ($data['reserved_stock'] ?? 0);
+            $data['current_sub_stock'] = $data['current_sub_stock'] ?? 0;
+            
+            // Multi-tenancy güvencesi (Controller'dan gelmiş olmalı ama burada da kontrol edebiliriz)
+            if (!isset($data['company_id'])) {
+                $data['company_id'] = Auth::user()?->company_id;
+            }
 
             $stock = $this->stockRepository->create($data);
 
             DB::afterCommit(function () use ($stock) {
+                // Uyarıları tetikle ve cache temizle
                 StockLevelChanged::dispatch($stock, $stock->company_id, $stock->clinic_id);
             });
 
@@ -260,13 +268,14 @@ class StockService
             $now             = now()->toDateTimeString();
 
             $totalUnitsRaw = Stock::totalBaseUnitsRaw();
-            $stats = $baseQuery->selectRaw("
-                COUNT(*) as total_items,
-                SUM(CASE WHEN is_active = 1 AND {$totalUnitsRaw} <= COALESCE(yellow_alert_level, min_stock_level) THEN 1 ELSE 0 END) as low_stock_items,
-                SUM(CASE WHEN is_active = 1 AND {$totalUnitsRaw} <= COALESCE(red_alert_level, critical_stock_level) THEN 1 ELSE 0 END) as critical_stock_items,
-                SUM(CASE WHEN is_active = 1 AND track_expiry = 1 AND expiry_date <= ? AND expiry_date > ? THEN 1 ELSE 0 END) as expiring_items,
-                SUM(purchase_price * current_stock) as total_value
-            ", [$nearExpiryLimit, $now])->first();
+            $stats = $baseQuery->join('products', 'stocks.product_id', '=', 'products.id')
+                ->selectRaw("
+                    COUNT(*) as total_items,
+                    SUM(CASE WHEN stocks.is_active = 1 AND {$totalUnitsRaw} <= COALESCE(products.yellow_alert_level, products.min_stock_level) THEN 1 ELSE 0 END) as low_stock_items,
+                    SUM(CASE WHEN stocks.is_active = 1 AND {$totalUnitsRaw} <= COALESCE(products.red_alert_level, products.critical_stock_level) THEN 1 ELSE 0 END) as critical_stock_items,
+                    SUM(CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 AND stocks.expiry_date <= ? AND stocks.expiry_date > ? THEN 1 ELSE 0 END) as expiring_items,
+                    SUM(stocks.purchase_price * stocks.current_stock) as total_value
+                ", [$nearExpiryLimit, $now])->first();
 
             return [
                 'total_items'          => (int) ($stats->total_items          ?? 0),

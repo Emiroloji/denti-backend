@@ -17,6 +17,97 @@ const handleError = (defaultMsg: string) => (error: any) => {
   message.error(error.response?.data?.message || defaultMsg)
 }
 
+export const useProducts = (filters?: any) => {
+  const queryClient = useQueryClient()
+
+  const {
+    data: products,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['products', filters],
+    queryFn: () => stockApi.getProducts(filters),
+    select: (data) => data.data,
+    staleTime: STALE_TIME,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: stockApi.createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      message.success('Ürün başarıyla oluşturuldu!')
+    },
+    onError: handleError('Ürün oluşturulurken hata oluştu!')
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      stockApi.updateProduct(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      message.success('Ürün başarıyla güncellendi!')
+    },
+    onError: handleError('Ürün güncellenirken hata oluştu!')
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: stockApi.deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      message.success('Ürün başarıyla silindi!')
+    },
+    onError: handleError('Ürün silinirken hata oluştu!')
+  })
+
+  return {
+    products,
+    isLoading,
+    error,
+    refetch,
+    createProduct: createMutation.mutateAsync,
+    updateProduct: updateMutation.mutateAsync,
+    deleteProduct: deleteMutation.mutateAsync,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending
+  }
+}
+
+export const useProductDetail = (id: number) => {
+  const queryClient = useQueryClient()
+
+  const {
+    data: product,
+    isLoading,
+    refetch
+  } = useQuery({
+    queryKey: ['products', id],
+    queryFn: () => stockApi.getProductById(id),
+    select: (data) => data.data,
+    enabled: !!id,
+    staleTime: STALE_TIME,
+  })
+
+  const addBatchMutation = useMutation({
+    mutationFn: stockApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products', id] })
+      queryClient.invalidateQueries({ queryKey: ['stock-stats'] })
+      message.success('Stok girişi başarıyla yapıldı!')
+    },
+    onError: handleError('Stok girişi yapılırken hata oluştu!')
+  })
+
+  return {
+    product,
+    isLoading,
+    refetch,
+    addBatch: addBatchMutation.mutateAsync,
+    isAddingBatch: addBatchMutation.isPending
+  }
+}
+
 export const useStocks = (filters?: StockFilter) => {
   const queryClient = useQueryClient()
 
@@ -199,7 +290,7 @@ export const useStockStats = () => {
 export const useStockTransactions = (id: number) => {
   return useQuery({
     queryKey: ['stocks', id, 'transactions'],
-    queryFn: () => stockApi.getTransactions(id),
+    queryFn: () => stockApi.getProductTransactions(id),
     select: (data) => data.data,
     enabled: !!id,
     staleTime: 60000,

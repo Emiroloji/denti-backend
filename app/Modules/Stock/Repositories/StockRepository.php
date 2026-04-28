@@ -18,7 +18,7 @@ class StockRepository implements StockRepositoryInterface
 
     public function all(): Collection
     {
-        return $this->model->with(['supplier', 'clinic'])->orderBy('name')->get();
+        return $this->model->with(['product', 'supplier', 'clinic'])->latest()->get();
     }
 
     public function find(int $id): ?Stock
@@ -85,36 +85,37 @@ class StockRepository implements StockRepositoryInterface
             $query->where('status', $filters['status']);
         }
 
+        $hasProductJoin = false;
         if (!empty($filters['stock_status']) || !empty($filters['level'])) {
             $statusFilter = $filters['stock_status'] ?? $filters['level'];
             switch ($statusFilter) {
                 case 'low':
                     $query->lowStock();
+                    $hasProductJoin = true;
                     break;
                 case 'critical':
                     $query->criticalStock();
+                    $hasProductJoin = true;
                     break;
                 case 'expired':
                     $query->expired();
                     break;
                 case 'near_expiry':
-                    $query->nearExpiry(); // Yellow threshold
-                    break;
-                case 'critical_expiry':
-                    $query->where('track_expiry', true)
-                          ->where('expiry_date', '<=', now()->addDays(15)) // Or use red_days if possible in SQL
-                          ->where('expiry_date', '>', now());
+                    $query->nearExpiry(); 
                     break;
             }
         }
 
         if (!empty($filters['search']) || !empty($filters['name'])) {
             $search = '%' . ($filters['search'] ?? $filters['name']) . '%';
+            if (!$hasProductJoin) {
+                $query->join('products', 'stocks.product_id', '=', 'products.id');
+            }
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', $search)
-                  ->orWhere('code', 'like', $search)
-                  ->orWhere('brand', 'like', $search);
-            });
+                      $q->where('products.name', 'like', $search)
+                        ->orWhere('products.sku', 'like', $search)
+                        ->orWhere('products.brand', 'like', $search);
+                  })->select('stocks.*');
         }
 
         if (!empty($filters['expiry_filter'])) {
@@ -128,7 +129,7 @@ class StockRepository implements StockRepositoryInterface
             }
         }
 
-        return $query->orderBy('name')->paginate($perPage);
+        return $query->latest()->paginate($perPage);
     }
 
     public function getLowStockItems(int $clinicId = null): Collection
@@ -187,7 +188,10 @@ class StockRepository implements StockRepositoryInterface
     }
     public function findByCode(string $code): ?Stock
     {
-        return $this->model->where('code', $code)->first();
+        return $this->model->join('products', 'stocks.product_id', '=', 'products.id')
+                    ->where('products.sku', $code)
+                    ->select('stocks.*')
+                    ->first();
     }
 
     public function getNextSequenceNumber(int $clinicId): int

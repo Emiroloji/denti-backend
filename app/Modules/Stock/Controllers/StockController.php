@@ -95,21 +95,26 @@ class StockController extends Controller
         try {
             $data = $request->validated();
 
-            $data['yellow_alert_level'] = $data['yellow_alert_level'] ?? $data['min_stock_level'];
-            $data['red_alert_level'] = $data['red_alert_level'] ?? $data['critical_stock_level'];
+            // Set defaults for batch
+            $data['company_id'] = auth()->user()->company_id;
             $data['currency'] = $data['currency'] ?? 'TRY';
             $data['is_active'] = $data['is_active'] ?? true;
             $data['status'] = $data['is_active'] ? 'active' : 'inactive';
             $data['track_expiry'] = $data['track_expiry'] ?? true;
-            $data['track_batch'] = $data['track_batch'] ?? false;
 
             $this->authorize('create', Stock::class);
 
             $stock = $this->stockService->createStock($data);
+            
+            // Fix: Load product for Resource naming (avoids undefined/null error)
+            $stock->load('product');
 
             return $this->success(new StockResource($stock), 'Stok başarıyla oluşturuldu', 201);
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Store Error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -310,44 +315,46 @@ class StockController extends Controller
         }
     }
 
-    public function deactivate($id): JsonResponse
+    public function deactivate(int $id): JsonResponse
     {
         try {
-            $stock = $this->stockService->getStockById((int)$id);
-
+            $stock = $this->stockService->getStockById($id);
             if (!$stock) {
                 return $this->error('Stok bulunamadı', 404);
             }
 
-            $updatedStock = $this->stockService->updateStock((int)$id, [
+            $this->authorize('update', $stock);
+
+            $updatedStock = $this->stockService->updateStock($id, [
                 'is_active' => false,
                 'status' => 'inactive'
             ]);
 
-            return $this->success(new StockResource($updatedStock), 'Stok pasif duruma getirildi');
+            return $this->success(new StockResource($updatedStock->load('product')), 'Stok pasif duruma getirildi');
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Deactivate Error: ' . $e->getMessage());
             return $this->error(__('messages.server_error'), 500);
         }
     }
 
-    public function reactivate($id): JsonResponse
+    public function reactivate(int $id): JsonResponse
     {
         try {
-            $stock = $this->stockService->getStockById((int)$id);
-
+            $stock = $this->stockService->getStockById($id);
             if (!$stock) {
                 return $this->error('Stok bulunamadı', 404);
             }
 
-            $updatedStock = $this->stockService->updateStock((int)$id, [
+            $this->authorize('update', $stock);
+
+            $updatedStock = $this->stockService->updateStock($id, [
                 'is_active' => true,
                 'status' => 'active'
             ]);
 
-            return $this->success(new StockResource($updatedStock), 'Stok tekrar aktif edildi');
+            return $this->success(new StockResource($updatedStock->load('product')), 'Stok başarıyla aktif edildi');
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Reactivate Error: ' . $e->getMessage());
             return $this->error(__('messages.server_error'), 500);
         }
     }

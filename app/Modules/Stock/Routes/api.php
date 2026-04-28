@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Modules\Stock\Controllers\ProductController;
 use App\Modules\Stock\Controllers\StockController;
 use App\Modules\Stock\Controllers\SupplierController;
 use App\Modules\Stock\Controllers\ClinicController;
@@ -11,10 +12,25 @@ use App\Modules\Stock\Controllers\StockReportController;
 
 Route::prefix('api')->middleware(['api', 'auth:sanctum'])->group(function () {
 
-    // Stocks
+    // Products
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProductController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/', [ProductController::class, 'store'])->middleware('permission:create-stocks');
+        Route::get('/{id}', [ProductController::class, 'show'])->middleware('permission:view-stocks');
+        Route::put('/{id}', [ProductController::class, 'update'])->middleware('permission:update-stocks');
+        Route::delete('/{id}', [ProductController::class, 'destroy'])->middleware('permission:delete-stocks');
+        Route::get('/{id}/transactions', [ProductController::class, 'transactions'])->middleware('permission:view-audit-logs');
+    });
+
+    // Stocks (now Batches)
     Route::prefix('stocks')->group(function () {
-        Route::get('/', [StockController::class, 'index'])->middleware('permission:view-stocks');
+        // Redirection: List now shows products
+        Route::get('/', [ProductController::class, 'index'])->middleware('permission:view-stocks');
         Route::post('/', [StockController::class, 'store'])->middleware('permission:create-stocks');
+        
+        // Batches specific operations
+        Route::get('/batches', [StockController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/batches', [StockController::class, 'store'])->middleware('permission:create-stocks');
         Route::get('/stats', [StockController::class, 'getStats'])->middleware('permission:view-reports');
         Route::get('/low-level', [StockController::class, 'getLowLevel'])->middleware('permission:view-stocks');
         Route::get('/critical-level', [StockController::class, 'getCriticalLevel'])->middleware('permission:view-stocks');

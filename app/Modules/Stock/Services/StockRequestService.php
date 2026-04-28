@@ -243,21 +243,22 @@ class StockRequestService
     {
         $stockRepository = app(StockRepositoryInterface::class);
 
-        // ÖNCE: Aynı code'a sahip stok var mı kontrol et
-        $existingStock = $stockRepository->findByCode($sourceStock->code);
-        if ($existingStock && $existingStock->clinic_id == $targetClinicId) {
+        // ÖNCE: Hedef klinikte bu ürüne ait bir stok var mı kontrol et
+        $existingStock = $stockRepository->getBaseQuery()
+            ->where('product_id', $sourceStock->product_id)
+            ->where('clinic_id', $targetClinicId)
+            ->first();
+
+        if ($existingStock) {
             return $existingStock;
         }
 
-        // Aynı ürünün hedef klinikteki karşılığını bul (name + brand ile)
-        $targetStock = $stockRepository->findByClinicAndProduct(
-            $targetClinicId,
-            $sourceStock->name,
-            $sourceStock->brand
-        );
+        // Aynı ürünün hedef klinikteki karşılığını bul (Artık product_id ile yapıyoruz)
+        // Eğer yukarıdaki kontrol bulamadıysa, yeni bir tane oluşturacağız
+        $targetStock = $existingStock;
 
         if (!$targetStock) {
-            // Yeni stok kaydı oluştur - YENİ UNIQUE CODE İLE
+            // Yeni stok kaydı oluştur
             $stockData = $sourceStock->toArray();
             unset($stockData['id'], $stockData['created_at'], $stockData['updated_at']);
             $stockData['clinic_id'] = $targetClinicId;
@@ -266,32 +267,10 @@ class StockRequestService
             $stockData['available_stock'] = 0;
             $stockData['internal_usage_count'] = 0;
 
-            // YENİ KOD OLUŞTUR
-            $stockData['code'] = $this->generateUniqueStockCode($sourceStock->category);
-
             $targetStock = $stockRepository->create($stockData);
         }
 
         return $targetStock;
-    }
-
-    protected function generateUniqueStockCode(string $category): string
-    {
-        $prefix = strtoupper(substr($category, 0, 3));
-
-        do {
-            $sequence = DB::table('stocks')
-                         ->where('code', 'like', $prefix . '-%')
-                         ->count() + 1;
-
-            $code = $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-
-            // Benzersiz olup olmadığını kontrol et
-            $exists = DB::table('stocks')->where('code', $code)->exists();
-
-        } while ($exists);
-
-        return $code;
     }
 
     public function getPendingRequests(int $clinicId = null): Collection

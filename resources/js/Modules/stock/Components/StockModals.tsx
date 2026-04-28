@@ -3,8 +3,9 @@
 import React from 'react'
 import { Modal, Form, Input, InputNumber, Select, Alert, Button, Space, Radio, Checkbox } from 'antd'
 import type { FormInstance } from 'antd'
+import { useAuthStore } from '@/Stores/authStore'
 import { Stock, StockAdjustmentRequest, StockUsageRequest } from '../Types/stock.types'
-import { StockForm } from './StockForm'
+import { ProductForm } from './ProductForm'
 import { formatStock } from '@/Utils/helpers'
 
 const { Option } = Select
@@ -12,7 +13,7 @@ const { Option } = Select
 interface StockModalsProps {
   // Form Modal
   isFormModalVisible: boolean
-  editingStock: Stock | null
+  editingStock: any | null // Master Product
   onFormModalClose: () => void
   onFormSuccess: () => void
 
@@ -54,19 +55,20 @@ export const StockModals: React.FC<StockModalsProps> = ({
   onUseSubmit,
   isUsing,
 }) => {
+  const user = useAuthStore(state => state.user)
+
   return (
     <>
       {/* Form Modal */}
       <Modal
-        title={editingStock ? 'Stok Düzenle' : 'Yeni Stok Ekle'}
+        title={editingStock ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'}
         open={isFormModalVisible}
         onCancel={onFormModalClose}
         footer={null}
         width={800}
-        
       >
-        <StockForm 
-          stock={editingStock || undefined}
+        <ProductForm 
+          initialValues={editingStock}
           onSuccess={onFormSuccess}
           onCancel={onFormModalClose}
         />
@@ -85,7 +87,10 @@ export const StockModals: React.FC<StockModalsProps> = ({
           form={adjustForm}
           layout="vertical"
           onFinish={onAdjustSubmit}
-          initialValues={{ is_sub_unit: false }}
+          initialValues={{ 
+            is_sub_unit: false,
+            performed_by: user?.name || ''
+          }}
         >
           <Alert
             message={`Mevcut Miktar: ${formatStock(
@@ -190,6 +195,10 @@ export const StockModals: React.FC<StockModalsProps> = ({
           form={useForm}
           layout="vertical"
           onFinish={onUseSubmit}
+          initialValues={{
+            performed_by: user?.name || '',
+            reason: 'treatment'
+          }}
         >
           <Alert
             message={`Mevcut Miktar: ${formatStock(

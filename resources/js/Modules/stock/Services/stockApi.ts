@@ -3,6 +3,8 @@
 import { api } from '@/Services/api'
 import {
   Stock,
+  Product,
+  CreateProductRequest,
   CreateStockRequest,
   UpdateStockRequest,
   StockAdjustmentRequest,
@@ -99,4 +101,23 @@ export const stockApi = {
   // Pending alert count
   getPendingAlertCount: (): Promise<ApiResponse<AlertCount>> => 
     api.get('/stock-alerts/pending/count'),
+
+  // Products
+  getProducts: (filters?: any): Promise<ApiResponse<Product[]>> =>
+    api.get('/products', { params: filters }),
+
+  getProductById: (id: number): Promise<ApiResponse<Product>> =>
+    api.get(`/products/${id}`),
+
+  createProduct: (data: CreateProductRequest): Promise<ApiResponse<Product>> =>
+    api.post('/products', data),
+
+  updateProduct: (id: number, data: any): Promise<ApiResponse<Product>> =>
+    api.put(`/products/${id}`, data),
+
+  deleteProduct: (id: number): Promise<ApiResponse<null>> =>
+    api.delete(`/products/${id}`),
+
+  getProductTransactions: (id: number): Promise<ApiResponse<any[]>> =>
+    api.get(`/products/${id}/transactions`),
 }

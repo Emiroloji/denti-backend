@@ -1,104 +1,101 @@
 // src/modules/stock/Types/stock.types.ts
 
-export interface Stock {
+export interface Product {
   id: number
   name: string
+  sku?: string
   description?: string
-  brand?: string
   unit: string
-  category: string
-  
-  // Backend'deki alan adları ile uyumlu
-  current_stock: number
+  category?: string
+  brand?: string
   min_stock_level: number
   critical_stock_level: number
   yellow_alert_level?: number
   red_alert_level?: number
+  is_active: boolean
+  total_stock: number
+  current_stock: number // Alias for compatibility
+  status?: 'active' | 'inactive' | 'critical' | 'low' | 'normal'
+  batches?: Stock[]
+  created_at?: string
+  updated_at?: string
+}
+
+export interface Stock {
+  id: number
+  product_id: number
+  product?: Product
+  name: string // Provided by backend Resource for compatibility
+  code?: string // Provided by backend Resource for compatibility
   
-  // Alt Birim (Kutu / Paket İçi Parça) Özellikleri
+  // Batch specific
+  supplier_id: number
+  supplier?: {
+    id: number
+    name: string
+  }
+  purchase_price: number
+  currency?: string
+  purchase_date: string
+  expiry_date?: string
+  current_stock: number
+  reserved_stock?: number
+  available_stock?: number
+  
+  // Alt Birim
   has_sub_unit?: boolean
   sub_unit_name?: string
   sub_unit_multiplier?: number
   current_sub_stock?: number
   total_base_units?: number
   
-  // Fiyat Bilgileri
-  purchase_price: number
-  currency?: string
-  
-  // Tedarikçi Bilgileri
-  supplier_id: number
-  supplier?: {
-    id: number
-    name: string
-    contact_person?: string
-    phone?: string
-    email?: string
-  }
-  
-  // Klinik Bilgileri
+  // Status
+  status?: 'active' | 'inactive' | 'deleted' | 'discontinued'
+  is_active?: boolean
+  track_expiry?: boolean
+  storage_location?: string
   clinic_id: number
   clinic?: {
     id: number
     name: string
-    location?: string
-    code?: string
   }
   
-  // Tarih Bilgileri
-  purchase_date: string
-  expiry_date?: string
+  // Computed
+  is_expired?: boolean
+  is_near_expiry?: boolean
+  days_to_expiry?: number
+  stock_status?: string
   
-  // Backend'deki ek alanlar
-  track_expiry?: boolean
-  track_batch?: boolean
-  storage_location?: string
-  
-  // ✅ EKSİK ALANLAR EKLENDİ - Backend'den gelenler
-  status?: 'active' | 'inactive' | 'deleted' | 'discontinued'
-  is_active?: boolean
-  internal_usage_count?: number
-  reserved_stock?: number
-  available_stock?: number
-  code?: string
-  deleted_at?: string
-  
-  // Sistem Tarihleri
   created_at?: string
   updated_at?: string
 }
 
-export interface CreateStockRequest {
+export interface CreateProductRequest {
   name: string
+  sku?: string
   description?: string
-  brand?: string
   unit: string
-  category: string
-  
-  // Backend alan adları ile uyumlu
+  category?: string
+  brand?: string
+  min_stock_level?: number
+  critical_stock_level?: number
+  company_id: number
+}
+
+export interface CreateStockRequest {
+  product_id: number
+  supplier_id: number
+  purchase_price: number
+  currency?: string
+  purchase_date: string
+  expiry_date?: string
   current_stock: number
-  current_sub_stock?: number
-  min_stock_level: number
-  critical_stock_level: number
-  yellow_alert_level?: number
-  red_alert_level?: number
-  
-  // Alt Birim Özellikleri
+  clinic_id: number
+  storage_location?: string
+  track_expiry?: boolean
   has_sub_unit?: boolean
   sub_unit_name?: string
   sub_unit_multiplier?: number
-  
-  purchase_price: number
-  currency?: string
-  supplier_id: number
-  clinic_id: number
-  purchase_date: string // ISO string format
-  expiry_date?: string // ISO string format
-  
-  // Backend'deki ek alanlar
-  track_expiry?: boolean
-  track_batch?: boolean
-  storage_location?: string
   is_active?: boolean
 }
 

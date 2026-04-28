@@ -17,17 +17,20 @@ class Stock extends Model
     protected $appends = [];
 
     protected $fillable = [
-        'name', 'code', 'description', 'unit', 'category', 'brand',
-        'supplier_id', 'purchase_price', 'currency', 'purchase_date', 'expiry_date',
+        'product_id', 'supplier_id', 'purchase_price', 'currency', 'purchase_date', 'expiry_date',
         'current_stock', 'reserved_stock', 'available_stock',
-        'min_stock_level', 'critical_stock_level',
-        'yellow_alert_level', 'red_alert_level',
-        'internal_usage_count', 'status', 'is_active', 'track_expiry', 'track_batch',
+        'status', 'is_active', 'track_expiry', 'track_batch',
         'expiry_yellow_days', 'expiry_red_days',
         'clinic_id', 'storage_location',
         'has_sub_unit', 'sub_unit_name', 'sub_unit_multiplier', 'current_sub_stock',
         'company_id'
     ];
+
+    // İlişkiler
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
 
     protected $casts = [
         'purchase_date' => 'date',
@@ -52,12 +55,9 @@ class Stock extends Model
         'current_stock' => 0,
         'reserved_stock' => 0,
         'available_stock' => 0,
-        'internal_usage_count' => 0,
         'has_sub_unit' => false,
         'current_sub_stock' => 0,
     ];
-
-    // İlişkiler
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
@@ -113,23 +113,24 @@ class Stock extends Model
 
     public function scopeLowStock($query)
     {
-        return $query->whereRaw(self::totalBaseUnitsRaw() . ' <= COALESCE(yellow_alert_level, min_stock_level)')
-                     ->where('is_active', true);
+        return $query->join('products', 'stocks.product_id', '=', 'products.id')
+                     ->whereRaw(self::totalBaseUnitsRaw() . ' <= COALESCE(products.yellow_alert_level, products.min_stock_level)')
+                     ->where('stocks.is_active', true)
+                     ->select('stocks.*');
     }
 
     public function scopeCriticalStock($query)
     {
-        return $query->whereRaw(self::totalBaseUnitsRaw() . ' <= COALESCE(red_alert_level, critical_stock_level)')
-                     ->where('is_active', true);
+        return $query->join('products', 'stocks.product_id', '=', 'products.id')
+                     ->whereRaw(self::totalBaseUnitsRaw() . ' <= COALESCE(products.red_alert_level, products.critical_stock_level)')
+                     ->where('stocks.is_active', true)
+                     ->select('stocks.*');
     }
 
     public function scopeNearExpiry($query, $days = null)
     {
         return $query->where('track_expiry', true)
-                    ->where(function ($q) use ($days) {
-                        $q->where('expiry_date', '<=', now()->addDays($days ?? 30)) // Fallback if needed
-                          ->orWhereRaw('expiry_date <= DATE_ADD(NOW(), INTERVAL expiry_yellow_days DAY)');
-                    })
+                    ->where('expiry_date', '<=', now()->addDays($days ?? 30))
                     ->where('expiry_date', '>', now())
                     ->where('is_active', true);
     }
@@ -154,9 +155,12 @@ class Stock extends Model
     {
         if (!$this->is_active) return 'inactive';
         
+        $product = $this->product;
+        if (!$product) return 'normal';
+
         $total = $this->total_base_units;
-        $redLevel = $this->red_alert_level ?? $this->critical_stock_level;
-        $yellowLevel = $this->yellow_alert_level ?? $this->min_stock_level;
+        $redLevel = $product->red_alert_level ?? $product->critical_stock_level;
+        $yellowLevel = $product->yellow_alert_level ?? $product->min_stock_level;
 
         if ($total <= $redLevel) return 'critical';
         if ($total <= $yellowLevel) return 'low';

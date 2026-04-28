@@ -1,0 +1,325 @@
+import React, { useState } from 'react';
+import { Head } from '@inertiajs/react';
+import { AppLayout } from '@/Layouts/AppLayout';
+import { 
+    Card, 
+    Typography, 
+    Row, 
+    Col, 
+    Statistic, 
+    Tag, 
+    Button, 
+    Space, 
+    Tabs,
+    Divider,
+    Breadcrumb,
+    Modal
+} from 'antd';
+import { 
+    ArrowLeftOutlined, 
+    PlusOutlined, 
+    DatabaseOutlined, 
+    HistoryOutlined,
+    InfoCircleOutlined,
+    LineChartOutlined
+} from '@ant-design/icons';
+import { 
+    AreaChart, 
+    Area, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip as ChartTooltip, 
+    ResponsiveContainer 
+} from 'recharts';
+import { Product, Stock as StockBatch } from '@/Modules/stock/Types/stock.types';
+import { StockTable } from '@/Modules/stock/Components/StockTable';
+import { useProductDetail, useStocks, useStockTransactions } from '@/Modules/stock/Hooks/useStocks';
+import { BatchForm } from '@/Modules/stock/Components/BatchForm';
+import { StockModals } from '@/Modules/stock/Components/StockModals';
+import { Form, Table } from 'antd';
+
+const { Title, Text } = Typography;
+
+interface Props {
+    product: Product;
+}
+
+const ProductShow = ({ product: initialProduct }: Props) => {
+    const { product, isLoading, addBatch, isAddingBatch } = useProductDetail(initialProduct.id);
+    const { transactions, isLoading: isHistoryLoading } = useStockTransactions(initialProduct.id);
+    const { adjustStock, useStock: executeStockUsage, isAdjusting, isUsing } = useStocks();
+    
+    const [isAddBatchModalVisible, setIsAddBatchModalVisible] = useState(false);
+    const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false);
+    const [isUseModalVisible, setIsUseModalVisible] = useState(false);
+    const [selectedBatch, setSelectedBatch] = useState<StockBatch | null>(null);
+    
+    const [adjustForm] = Form.useForm();
+    const [useForm] = Form.useForm();
+
+    // If hook is loading, use initial data from Inertia
+    const data = product || initialProduct;
+
+    const handleAddBatch = async (values: any) => {
+        await addBatch(values);
+        setIsAddBatchModalVisible(false);
+    };
+
+    const handleAdjust = (batch: StockBatch) => {
+        setSelectedBatch(batch);
+        setIsAdjustModalVisible(true);
+    };
+
+    const handleUse = (batch: StockBatch) => {
+        setSelectedBatch(batch);
+        setIsUseModalVisible(true);
+    };
+
+    return (
+        <>
+            <Head title={`${data.name} - Ürün Detayı`} />
+            
+            <div style={{ marginBottom: 16 }}>
+                <Breadcrumb items={[
+                    { title: <a href="/stocks">Stok Yönetimi</a> },
+                    { title: data.name }
+                ]} />
+            </div>
+
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                {/* Header Card */}
+                <Card bordered={false} className="premium-card">
+                    <Row gutter={24} align="middle">
+                        <Col flex="auto">
+                            <Space align="center" size="middle">
+                                <Button 
+                                    icon={<ArrowLeftOutlined />} 
+                                    onClick={() => window.location.href = '/stocks'} 
+                                />
+                                <div>
+                                    <Title level={2} style={{ margin: 0 }}>{data.name}</Title>
+                                    <Text type="secondary">{data.category} | SKU: {data.sku || 'Belirtilmedi'}</Text>
+                                </div>
+                                <Tag color={data.is_active ? 'green' : 'red'}>
+                                    {data.is_active ? 'Aktif' : 'Pasif'}
+                                </Tag>
+                            </Space>
+                        </Col>
+                        <Col>
+                            <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsAddBatchModalVisible(true)}>
+                                Yeni Parti Ekle
+                            </Button>
+                        </Col>
+                    </Row>
+                    
+                    <Divider />
+                    
+                    <Row gutter={48}>
+                        <Col span={6}>
+                            <Statistic 
+                                title="Toplam Stok" 
+                                value={data.total_stock} 
+                                suffix={data.unit} 
+                                prefix={<DatabaseOutlined />}
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic 
+                                title="Parti Sayısı" 
+                                value={data.batches?.length || 0} 
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic 
+                                title="Minimum Seviye" 
+                                value={data.min_stock_level} 
+                                valueStyle={{ color: '#faad14' }}
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic 
+                                title="Kritik Seviye" 
+                                value={data.critical_stock_level} 
+                                valueStyle={{ color: '#ff4d4f' }}
+                            />
+                        </Col>
+                    </Row>
+                </Card>
+
+                {/* Content Tabs */}
+                <Tabs
+                    defaultActiveKey="batches"
+                    items={[
+                        {
+                            key: 'batches',
+                            label: <span><DatabaseOutlined /> Stok Partileri</span>,
+                            children: (
+                                <Card bordered={false} className="premium-card">
+                                    <StockTable 
+                                        stocks={data.batches || []}
+                                        loading={isLoading}
+                                        isBatchMode={true}
+                                        onEdit={() => {}}
+                                        onDelete={() => {}}
+                                        onSoftDelete={() => {}}
+                                        onHardDelete={() => {}}
+                                        onReactivate={() => {}}
+                                        onAdjust={handleAdjust}
+                                        onUse={handleUse}
+                                        onViewHistory={() => {}}
+                                    />
+                                </Card>
+                            )
+                        },
+                        {
+                            key: 'history',
+                            label: <span><HistoryOutlined /> İşlem Geçmişi</span>,
+                            children: (
+                                <Card bordered={false} className="premium-card">
+                                    <Table 
+                                        dataSource={transactions || []}
+                                        loading={isHistoryLoading}
+                                        size="small"
+                                        rowKey="id"
+                                        columns={[
+                                            {
+                                                title: 'Tarih',
+                                                dataIndex: 'transaction_date',
+                                                render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm')
+                                            },
+                                            {
+                                                title: 'İşlem',
+                                                dataIndex: 'type',
+                                                render: (type) => {
+                                                    const types: any = {
+                                                        'purchase': { label: 'Alım', color: 'green' },
+                                                        'usage': { label: 'Kullanım', color: 'blue' },
+                                                        'adjustment': { label: 'Düzeltme', color: 'orange' },
+                                                        'transfer_in': { label: 'Transfer (Gelen)', color: 'cyan' },
+                                                        'transfer_out': { label: 'Transfer (Giden)', color: 'magenta' }
+                                                    };
+                                                    const config = types[type] || { label: type, color: 'default' };
+                                                    return <Tag color={config.color}>{config.label}</Tag>;
+                                                }
+                                            },
+                                            {
+                                                title: 'Miktar',
+                                                dataIndex: 'quantity',
+                                                render: (qty, record) => (
+                                                    <Text strong style={{ color: record.type === 'purchase' || record.type === 'transfer_in' ? '#52c41a' : '#ff4d4f' }}>
+                                                        {record.type === 'purchase' || record.type === 'transfer_in' ? '+' : '-'}{qty}
+                                                    </Text>
+                                                )
+                                            },
+                                            {
+                                                title: 'Yeni Stok',
+                                                dataIndex: 'new_stock',
+                                                render: (val) => <Text strong>{val}</Text>
+                                            },
+                                            {
+                                                title: 'İşlemi Yapan',
+                                                dataIndex: 'performed_by'
+                                            },
+                                            {
+                                                title: 'Açıklama',
+                                                dataIndex: 'description',
+                                                ellipsis: true
+                                            }
+                                        ]}
+                                    />
+                                </Card>
+                            )
+                        },
+                        {
+                            key: 'report',
+                            label: <span><LineChartOutlined /> Grafik / Analiz</span>,
+                            children: (
+                                <Card bordered={false} className="premium-card">
+                                    <Title level={5}>Stok Değişim Trendi (Son İşlemler)</Title>
+                                    <div style={{ height: 300, width: '100%', marginTop: 24 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart
+                                                data={(transactions || []).slice().reverse().map((t: any) => ({
+                                                    name: dayjs(t.transaction_date).format('DD/MM'),
+                                                    stok: t.new_stock
+                                                }))}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="name" />
+                                                <YAxis />
+                                                <ChartTooltip />
+                                                <Area type="monotone" dataKey="stok" stroke="#1890ff" fill="#e6f7ff" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </Card>
+                            )
+                        },
+                        {
+                            key: 'info',
+                            label: <span><InfoCircleOutlined /> Ürün Bilgileri</span>,
+                            children: (
+                                <Card bordered={false} className="premium-card">
+                                    <Text>{data.description || 'Açıklama belirtilmedi.'}</Text>
+                                </Card>
+                            )
+                        }
+                    ]}
+                />
+            </Space>
+
+            <Modal
+                title={`${data.name} - Yeni Stok Girişi (Parti)`}
+                open={isAddBatchModalVisible}
+                onCancel={() => setIsAddBatchModalVisible(false)}
+                footer={null}
+                width={600}
+                destroyOnClose
+            >
+                <BatchForm 
+                    productId={data.id} 
+                    onSubmit={handleAddBatch}
+                    onCancel={() => setIsAddBatchModalVisible(false)}
+                    isSubmitting={isAddingBatch}
+                />
+            </Modal>
+
+            <StockModals 
+                isFormModalVisible={false}
+                editingStock={null}
+                onFormModalClose={() => {}}
+                onFormSuccess={() => {}}
+                
+                isAdjustModalVisible={isAdjustModalVisible}
+                selectedStock={selectedBatch}
+                adjustForm={adjustForm}
+                onAdjustModalClose={() => setIsAdjustModalVisible(false)}
+                onAdjustSubmit={async (values) => {
+                    if (selectedBatch) {
+                        await adjustStock({ id: selectedBatch.id, data: values });
+                        setIsAdjustModalVisible(false);
+                        adjustForm.resetFields();
+                    }
+                }}
+                isAdjusting={isAdjusting}
+
+                isUseModalVisible={isUseModalVisible}
+                useForm={useForm}
+                onUseModalClose={() => setIsUseModalVisible(false)}
+                onUseSubmit={async (values) => {
+                    if (selectedBatch) {
+                        await executeStockUsage({ id: selectedBatch.id, data: values });
+                        setIsUseModalVisible(false);
+                        useForm.resetFields();
+                    }
+                }}
+                isUsing={isUsing}
+            />
+        </>
+    );
+};
+
+ProductShow.layout = (page: React.ReactNode) => <AppLayout children={page} />;
+
+export default ProductShow;

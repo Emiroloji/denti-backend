@@ -27,6 +27,7 @@ import { useStockTableLogic } from '../Hooks/useStockTableLogic'
 interface StockTableProps {
   stocks: Stock[]
   loading: boolean
+  isBatchMode?: boolean
   onEdit: (stock: Stock) => void
   onDelete: (id: number) => void
   onSoftDelete: (id: number) => void
@@ -40,6 +41,7 @@ interface StockTableProps {
 export const StockTable: React.FC<StockTableProps> = ({
   stocks,
   loading,
+  isBatchMode = false,
   onEdit,
   onDelete,
   onSoftDelete,
@@ -65,7 +67,7 @@ export const StockTable: React.FC<StockTableProps> = ({
 
   const columns: ColumnsType<Stock> = [
     {
-      title: '📦 Ürün',
+      title: '📦 Ürün / Parti',
       key: 'name',
       fixed: 'left',
       width: 250,
@@ -79,51 +81,54 @@ export const StockTable: React.FC<StockTableProps> = ({
           </Avatar>
           <div>
             <Text strong style={{ fontSize: 13, display: 'block' }}>{record.name}</Text>
-            {record.description && (
-              <Text type="secondary" style={{ fontSize: 11 }} ellipsis={{ tooltip: record.description }}>
-                {record.description}
+            {isBatchMode ? (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                ID: #{record.id} | {record.storage_location || 'Konum yok'}
               </Text>
+            ) : (
+              record.sku && <Text type="secondary" style={{ fontSize: 11 }}>SKU: {record.sku}</Text>
             )}
           </div>
         </Space>
       ),
     },
-    {
-      title: '🏷️ Marka',
-      dataIndex: 'brand',
-      key: 'brand',
-      width: 120,
-      render: (brand) => brand ? <Tag color="blue">{brand}</Tag> : <Text type="secondary">-</Text>
-    },
-    {
+    !isBatchMode ? {
       title: '🗂️ Kategori',
       dataIndex: 'category',
       key: 'category',
       width: 120,
       render: (cat) => <Tag color="cyan">{cat}</Tag>
+    } : {
+      title: '📅 Giriş Tarihi',
+      dataIndex: 'purchase_date',
+      key: 'purchase_date',
+      width: 120,
+      render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
-      title: '🔢 Mevcut Stok',
+      title: isBatchMode ? '🔢 Parti Stoğu' : '🔢 Toplam Stok',
       key: 'current_stock',
-      width: 180,
+      width: 150,
       render: (_, record) => (
         <div>
-          <Text strong style={{ fontSize: 13 }}>
-            {formatStock(
-              record.current_stock,
-              record.unit,
-              record.has_sub_unit,
-              record.current_sub_stock,
-              record.sub_unit_name
-            )}
+          <Text strong style={{ fontSize: 14 }}>
+            {isBatchMode ? record.current_stock : (record as any).total_stock} {record.unit}
           </Text>
-          {record.has_sub_unit && (
-            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
-              Toplam: {record.total_base_units} {record.sub_unit_name}
-            </div>
-          )}
         </div>
       )
+    },
+    isBatchMode ? {
+      title: '📅 S.K.T',
+      dataIndex: 'expiry_date',
+      key: 'expiry_date',
+      width: 120,
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : '-'
+    } : {
+      title: '📦 Partiler',
+      key: 'batches_count',
+      width: 100,
+      align: 'center',
+      render: (_, record) => <Tag color="blue">{(record as any).batches?.length || 0} Parti</Tag>
     },
     {
       title: '⚡ Durum',
@@ -132,7 +137,12 @@ export const StockTable: React.FC<StockTableProps> = ({
       align: 'center',
       render: (_, record) => <StockLevelBadge stock={record} />
     },
-    {
+    isBatchMode ? {
+      title: '🏪 Tedarikçi',
+      key: 'supplier',
+      width: 150,
+      render: (_, record) => record.supplier?.name || '-'
+    } : {
       title: '📉 Min',
       dataIndex: 'min_stock_level',
       key: 'min_stock_level',
@@ -140,133 +150,56 @@ export const StockTable: React.FC<StockTableProps> = ({
       align: 'center',
     },
     {
-      title: '⚠️ Kritik',
-      dataIndex: 'critical_stock_level',
-      key: 'critical_stock_level',
-      width: 80,
-      align: 'center',
-      render: (val) => <Text type="danger" strong>{val}</Text>
-    },
-    {
-      title: '💸 Birim Fiyat',
-      dataIndex: 'purchase_price',
-      key: 'purchase_price',
+      title: isBatchMode ? '💰 Fiyat' : '⚠️ Kritik',
+      key: 'price_or_critical',
       width: 120,
-      align: 'right',
-      render: (val, record) => <Text style={{ color: '#52c41a' }}>{val} {record.currency || 'TRY'}</Text>
-    },
-    {
-      title: '💰 Toplam Değer',
-      key: 'total_value',
-      width: 130,
-      align: 'right',
-      render: (_, record) => <Text strong>{(record.purchase_price * record.current_stock).toLocaleString()} {record.currency || 'TRY'}</Text>
-    },
-    {
-      title: '📅 S.K.T',
-      dataIndex: 'expiry_date',
-      key: 'expiry_date',
-      width: 120,
-      align: 'center',
-      render: (date, record) => {
-        if (!date) return <Text type="secondary">-</Text>
-        const days = dayjs(date).diff(dayjs(), 'day')
-        let color = 'inherit'
-        if (days < 0) color = '#cf1322' // Geçmiş
-        else if (days <= (record.expiry_red_days || 15)) color = '#ff4d4f' // Kritik
-        else if (days <= (record.expiry_yellow_days || 30)) color = '#faad14' // Uyarı
-
-        return (
-          <Tooltip title={`${days < 0 ? 'Geçti' : `${days} gün kaldı`}`}>
-            <span style={{ color, fontWeight: days <= (record.expiry_yellow_days || 30) ? 'bold' : 'normal' }}>
-              {dayjs(date).format('DD/MM/YYYY')}
-            </span>
-          </Tooltip>
-        )
-      }
-    },
-    {
-      title: '🏪 Tedarikçi',
-      key: 'supplier',
-      width: 150,
-      render: (_, record) => record.supplier?.name || <Text type="secondary">-</Text>
-    },
-    {
-      title: '🏥 Klinik',
-      key: 'clinic',
-      width: 150,
-      render: (_, record) => record.clinic?.name || <Text type="secondary">-</Text>
+      render: (_, record) => isBatchMode ? (
+        <Text style={{ color: '#52c41a' }}>{record.purchase_price} {record.currency}</Text>
+      ) : (
+        <Text type="danger" strong>{record.critical_stock_level}</Text>
+      )
     },
     {
       title: '⚙️',
       key: 'actions',
-      width: 60,
+      width: 120,
       fixed: 'right',
       align: 'center',
-      render: (_, record) => {
-        const status = getStockStatus(record)
-        const isInactive = status.type === 'inactive'
-        
-        const menuItems: MenuProps['items'] = [
-          {
-            key: 'history',
-            label: 'Rapor / Geçmiş',
-            icon: <LineChartOutlined />,
-            onClick: () => onViewHistory(record)
-          },
-          {
-            type: 'divider'
-          },
-          {
-            key: 'use',
-            label: 'Stok Kullan',
-            icon: <MinusOutlined />,
-            onClick: () => onUse(record),
-            disabled: isInactive || record.current_stock <= 0
-          },
-          {
-            key: 'adjust',
-            label: 'Stok Ayarla',
-            icon: <PlusOutlined />,
-            onClick: () => onAdjust(record),
-            disabled: isInactive
-          },
-          {
-            type: 'divider'
-          },
-          {
-            key: 'edit',
-            label: 'Düzenle',
-            icon: <EditOutlined />,
-            onClick: () => onEdit(record)
-          },
-          {
-            key: 'delete-standard',
-            label: 'Sil (Güvenli)',
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: () => handleDeleteConfirm(record.id)
-          },
-          {
-            key: 'delete-options',
-            label: 'Gelişmiş Seçenekler',
-            icon: <MoreOutlined />,
-            onClick: () => handleAdvancedDelete(record)
-          }
-        ]
-
-        return (
-          <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow trigger={['click']}>
+      render: (_, record) => (
+        <Space>
+          {!isBatchMode && (
             <Button 
-              type="text" 
-              shape="circle" 
-              icon={<MoreOutlined style={{ fontSize: 20 }} />} 
-            />
+              type="primary" 
+              size="small" 
+              onClick={() => window.location.href = `/stock/products/${record.id}`}
+            >
+              Detay
+            </Button>
+          )}
+          {isBatchMode && (
+            <Button 
+              size="small" 
+              onClick={() => onUse(record)}
+              disabled={record.current_stock <= 0}
+            >
+              Kullan
+            </Button>
+          )}
+          <Dropdown 
+            menu={{ 
+              items: [
+                { key: 'edit', label: 'Düzenle', icon: <EditOutlined />, onClick: () => onEdit(record) },
+                { key: 'delete', label: 'Sil', icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteConfirm(record.id) }
+              ] 
+            }} 
+            trigger={['click']}
+          >
+            <Button type="text" icon={<MoreOutlined />} />
           </Dropdown>
-        )
-      },
+        </Space>
+      )
     },
-  ]
+  ].filter(Boolean) as ColumnsType<Stock>
 
   return (
     <>
