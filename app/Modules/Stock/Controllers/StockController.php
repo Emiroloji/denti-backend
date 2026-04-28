@@ -225,6 +225,7 @@ class StockController extends Controller
                 (int)$id,
                 $data['quantity'],
                 $performedBy,
+                auth()->id(),
                 $notes,
                 $data['is_from_reserved'] ?? false
             );

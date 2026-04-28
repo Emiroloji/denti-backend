@@ -59,9 +59,12 @@ class ProductRepository
 
     public function getTransactions(int $id): Collection
     {
-        return \App\Modules\Stock\Models\StockTransaction::whereIn(
-            'stock_id', 
-            \App\Modules\Stock\Models\Stock::where('product_id', $id)->pluck('id')
-        )->latest('transaction_date')->get();
+        return \App\Modules\Stock\Models\StockTransaction::with(['user', 'stock'])
+            ->whereIn(
+                'stock_id', 
+                \App\Modules\Stock\Models\Stock::where('product_id', $id)->pluck('id')
+            )
+            ->latest('transaction_date')
+            ->get();
     }
 }

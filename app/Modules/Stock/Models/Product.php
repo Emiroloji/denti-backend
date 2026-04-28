@@ -17,11 +17,12 @@ class Product extends Model
         'name', 'sku', 'description', 'unit', 'category', 'brand',
         'min_stock_level', 'critical_stock_level',
         'yellow_alert_level', 'red_alert_level',
-        'is_active', 'company_id'
+        'is_active', 'has_expiration_date', 'company_id'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'has_expiration_date' => 'boolean',
         'min_stock_level' => 'integer',
         'critical_stock_level' => 'integer',
         'yellow_alert_level' => 'integer',
@@ -42,6 +43,11 @@ class Product extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(StockTransaction::class, 'product_id');
+    }
+
+    public function stockTransactions()
+    {
+        return $this->hasManyThrough(StockTransaction::class, Stock::class, 'product_id', 'stock_id');
     }
 
     // Accessors

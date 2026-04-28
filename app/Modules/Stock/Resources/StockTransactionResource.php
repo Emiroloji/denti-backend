@@ -22,6 +22,11 @@ class StockTransactionResource extends JsonResource
             'notes' => $this->notes,
             'transaction_date' => $this->transaction_date ? $this->transaction_date->format('Y-m-d H:i:s') : null,
             'is_sub_unit' => $this->is_sub_unit,
+            'user' => $this->whenLoaded('user', [
+                'id' => $this->user?->id,
+                'name' => $this->user?->name,
+            ]),
+            'stock' => new StockResource($this->whenLoaded('stock')),
         ];
     }
 }

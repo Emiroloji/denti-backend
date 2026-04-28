@@ -18,7 +18,7 @@ class StockTransaction extends Model
     use Tenantable, SoftDeletes;
 
     protected $fillable = [
-        'transaction_number', 'stock_id', 'clinic_id', 'type',
+        'transaction_number', 'stock_id', 'user_id', 'clinic_id', 'type',
         'quantity', 'previous_stock', 'new_stock',
         'unit_price', 'total_price', 'stock_request_id',
         'reference_number', 'batch_number', 'description',
@@ -41,6 +41,11 @@ class StockTransaction extends Model
     public function stock(): BelongsTo
     {
         return $this->belongsTo(Stock::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class);
     }
 
     public function clinic(): BelongsTo

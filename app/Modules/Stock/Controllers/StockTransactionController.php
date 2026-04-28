@@ -82,4 +82,21 @@ class StockTransactionController extends Controller
             'data' => $transactions
         ]);
     }
+
+    public function reverse($id)
+    {
+        $success = app(\App\Modules\Stock\Services\StockService::class)->reverseTransaction($id);
+
+        if (!$success) {
+            return response()->json([
+                'success' => false,
+                'message' => 'İşlem geri alınamadı'
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'İşlem başarıyla geri alındı'
+        ]);
+    }
 }

@@ -38,6 +38,7 @@ import { useProductDetail, useStocks, useStockTransactions } from '@/Modules/sto
 import { BatchForm } from '@/Modules/stock/Components/BatchForm';
 import { StockModals } from '@/Modules/stock/Components/StockModals';
 import { Form, Table } from 'antd';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -107,9 +108,26 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                             </Space>
                         </Col>
                         <Col>
-                            <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsAddBatchModalVisible(true)}>
-                                Yeni Parti Ekle
-                            </Button>
+                            {data.has_expiration_date ? (
+                                <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsAddBatchModalVisible(true)}>
+                                    Yeni Parti Ekle
+                                </Button>
+                            ) : (
+                                <Button 
+                                    type="primary" 
+                                    icon={<PlusOutlined />} 
+                                    size="large" 
+                                    onClick={() => {
+                                        if (data.batches && data.batches.length > 0) {
+                                            handleAdjust(data.batches[0]);
+                                        } else {
+                                            setIsAddBatchModalVisible(true);
+                                        }
+                                    }}
+                                >
+                                    Stok Girişi Yap
+                                </Button>
+                            )}
                         </Col>
                     </Row>
                     
@@ -153,7 +171,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                     items={[
                         {
                             key: 'batches',
-                            label: <span><DatabaseOutlined /> Stok Partileri</span>,
+                            label: <span><DatabaseOutlined /> {data.has_expiration_date ? 'Stok Partileri' : 'Stok Detayları'}</span>,
                             children: (
                                 <Card bordered={false} className="premium-card">
                                     <StockTable 
@@ -236,23 +254,48 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                             label: <span><LineChartOutlined /> Grafik / Analiz</span>,
                             children: (
                                 <Card bordered={false} className="premium-card">
-                                    <Title level={5}>Stok Değişim Trendi (Son İşlemler)</Title>
-                                    <div style={{ height: 300, width: '100%', marginTop: 24 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart
-                                                data={(transactions || []).slice().reverse().map((t: any) => ({
-                                                    name: dayjs(t.transaction_date).format('DD/MM'),
-                                                    stok: t.new_stock
-                                                }))}
-                                            >
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                <XAxis dataKey="name" />
-                                                <YAxis />
-                                                <ChartTooltip />
-                                                <Area type="monotone" dataKey="stok" stroke="#1890ff" fill="#e6f7ff" />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                                    <Title level={5}>Stok Değişim Trendi</Title>
+                                    {(transactions || []).length > 0 ? (
+                                        <div style={{ height: 350, width: '100%', marginTop: 24 }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart
+                                                    data={(transactions || []).slice().reverse().map((t: any) => ({
+                                                        name: dayjs(t.transaction_date).format('DD/MM HH:mm'),
+                                                        stok: t.new_stock,
+                                                        miktar: t.quantity,
+                                                        tip: t.type_text
+                                                    }))}
+                                                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                                                >
+                                                    <defs>
+                                                        <linearGradient id="colorStok" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor="#1890ff" stopOpacity={0.1}/>
+                                                            <stop offset="95%" stopColor="#1890ff" stopOpacity={0}/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#8c8c8c' }} />
+                                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#8c8c8c' }} />
+                                                    <ChartTooltip 
+                                                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                                    />
+                                                    <Area 
+                                                        type="monotone" 
+                                                        dataKey="stok" 
+                                                        stroke="#1890ff" 
+                                                        strokeWidth={2}
+                                                        fillOpacity={1} 
+                                                        fill="url(#colorStok)" 
+                                                        activeDot={{ r: 6, strokeWidth: 0 }}
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    ) : (
+                                        <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                                            <Text type="secondary">Bu ürün için henüz işlem geçmişi bulunmuyor.</Text>
+                                        </div>
+                                    )}
                                 </Card>
                             )
                         },
@@ -261,7 +304,51 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                             label: <span><InfoCircleOutlined /> Ürün Bilgileri</span>,
                             children: (
                                 <Card bordered={false} className="premium-card">
-                                    <Text>{data.description || 'Açıklama belirtilmedi.'}</Text>
+                                    <Row gutter={[32, 24]}>
+                                        <Col span={12}>
+                                            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                                                <div>
+                                                    <Text type="secondary">Ürün Adı</Text>
+                                                    <Title level={5} style={{ margin: 0 }}>{data.name}</Title>
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary">Kategori</Text>
+                                                    <div><Tag color="blue">{data.category || 'Belirtilmedi'}</Tag></div>
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary">SKU / Barkod</Text>
+                                                    <div><Text strong>{data.sku || '-'}</Text></div>
+                                                </div>
+                                            </Space>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                                                <div>
+                                                    <Text type="secondary">Marka</Text>
+                                                    <div><Text strong>{data.brand || '-'}</Text></div>
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary">Takip Tipi</Text>
+                                                    <div>
+                                                        <Tag color={data.has_expiration_date ? 'purple' : 'orange'}>
+                                                            {data.has_expiration_date ? 'Parti / SKT Takibi' : 'Genel Stok Takibi'}
+                                                        </Tag>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary">Birim</Text>
+                                                    <div><Text strong>{data.unit}</Text></div>
+                                                </div>
+                                            </Space>
+                                        </Col>
+                                        <Col span={24}>
+                                            <Divider style={{ margin: '8px 0' }} />
+                                            <Text type="secondary">Açıklama</Text>
+                                            <div style={{ marginTop: 8 }}>
+                                                <Text>{data.description || 'Açıklama belirtilmedi.'}</Text>
+                                            </div>
+                                        </Col>
+                                    </Row>
                                 </Card>
                             )
                         }

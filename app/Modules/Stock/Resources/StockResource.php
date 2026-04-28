@@ -16,6 +16,7 @@ class StockResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'batch_number' => $this->batch_number,
             'product_id' => $this->product_id,
             'name' => $this->product?->name,
             'code' => $this->product?->sku,
@@ -35,7 +36,17 @@ class StockResource extends JsonResource
             'is_active' => $this->is_active,
             'track_expiry' => $this->track_expiry,
             'clinic_id' => $this->clinic_id,
+            'clinic_name' => $this->clinic?->name,
             'storage_location' => $this->storage_location,
+            'product' => [
+                'id' => $this->product?->id,
+                'name' => $this->product?->name,
+                'sku' => $this->product?->sku,
+                'brand' => $this->product?->brand,
+                'category' => $this->product?->category,
+                'unit' => $this->product?->unit,
+                'has_expiration_date' => $this->product?->has_expiration_date,
+            ],
             'total_base_units' => $this->total_base_units,
             'stock_status'     => $this->stock_status,
             'is_expired'       => $this->is_expired,

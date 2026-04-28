@@ -118,7 +118,7 @@ class ProductController extends Controller
     {
         try {
             $transactions = $this->productService->getProductTransactions((int)$id);
-            return $this->success($transactions);
+            return $this->success(StockTransactionResource::collection($transactions));
         } catch (\Exception $e) {
             Log::error($e);
             return $this->error(__('messages.server_error'), 500);

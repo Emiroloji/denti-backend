@@ -36,6 +36,7 @@ export const useProducts = (filters?: any) => {
     mutationFn: stockApi.createProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stocks'] })
       message.success('Ürün başarıyla oluşturuldu!')
     },
     onError: handleError('Ürün oluşturulurken hata oluştu!')

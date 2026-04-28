@@ -25,6 +25,15 @@ class StoreProductRequest extends FormRequest
             'yellow_alert_level' => 'nullable|integer|min:0',
             'red_alert_level' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'has_expiration_date' => 'boolean',
+            'initial_stock' => 'nullable|numeric|min:0',
+            'clinic_id' => 'nullable|integer',
+            'supplier_id' => 'nullable|integer',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'currency' => 'nullable|string|max:10',
+            'purchase_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date',
+            'storage_location' => 'nullable|string|max:100',
         ];
     }
 }

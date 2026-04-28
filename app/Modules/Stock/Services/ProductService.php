@@ -24,7 +24,49 @@ class ProductService
 
     public function createProduct(array $data): Product
     {
-        return $this->productRepository->create($data);
+        return \DB::transaction(function () use ($data) {
+            $stockData = [
+                'initial_stock' => $data['initial_stock'] ?? 0,
+                'clinic_id' => $data['clinic_id'] ?? null,
+                'supplier_id' => $data['supplier_id'] ?? null,
+                'purchase_price' => $data['purchase_price'] ?? null,
+                'currency' => $data['currency'] ?? 'TRY',
+                'purchase_date' => $data['purchase_date'] ?? null,
+                'expiry_date' => $data['expiry_date'] ?? null,
+                'storage_location' => $data['storage_location'] ?? null,
+                'min_stock_level' => $data['min_stock_level'] ?? 10,
+                'critical_stock_level' => $data['critical_stock_level'] ?? 5,
+            ];
+
+            // Product fields only
+            $productFields = ['name', 'sku', 'description', 'unit', 'category', 'brand', 'min_stock_level', 'critical_stock_level', 'is_active', 'has_expiration_date'];
+            $productData = array_intersect_key($data, array_flip($productFields));
+            
+            $product = $this->productRepository->create($productData);
+
+            if ($stockData['clinic_id'] !== null) {
+                app(StockService::class)->createStock([
+                    'product_id' => $product->id,
+                    'clinic_id' => $stockData['clinic_id'],
+                    'supplier_id' => $stockData['supplier_id'],
+                    'current_stock' => $stockData['initial_stock'],
+                    'available_stock' => $stockData['initial_stock'],
+                    'purchase_price' => $stockData['purchase_price'],
+                    'currency' => $stockData['currency'],
+                    'purchase_date' => $stockData['purchase_date'],
+                    'expiry_date' => $stockData['expiry_date'],
+                    'storage_location' => $stockData['storage_location'],
+                    'min_stock_level' => $stockData['min_stock_level'],
+                    'critical_stock_level' => $stockData['critical_stock_level'],
+                    'company_id' => $product->company_id,
+                    'is_active' => true,
+                    'status' => 'active',
+                    'track_expiry' => $product->has_expiration_date,
+                ]);
+            }
+
+            return $product;
+        });
     }
 
     public function updateProduct(int $id, array $data): ?Product

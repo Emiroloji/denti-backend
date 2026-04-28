@@ -133,9 +133,10 @@ class StockService
      * @throws StockNotFoundException    Stok bulunamazsa
      * @throws InsufficientStockException Yeterli stok yoksa
      */
-    public function useStock(int $stockId, int $quantity, string $performedBy, string $notes = null, bool $isFromReserved = false): bool
+    public function useStock(int $stockId, int $quantity, string $performedBy, int $userId = null, string $notes = null, bool $isFromReserved = false): bool
     {
-        return DB::transaction(function () use ($stockId, $quantity, $performedBy, $notes, $isFromReserved) {
+        \Illuminate\Support\Facades\Log::info("useStock called for stock $stockId with quantity $quantity");
+        return DB::transaction(function () use ($stockId, $quantity, $performedBy, $userId, $notes, $isFromReserved) {
             // 🔒 Pessimistic lock: eşzamanlı kullanımlarda veri bütünlüğünü korur
             $stock = $this->stockRepository->findAndLock($stockId);
             if (!$stock) {
@@ -203,6 +204,7 @@ class StockService
                 'new_stock'        => $isSubUnitUsage ? $freshStock->total_base_units : $freshStock->current_stock,
                 'notes'            => $notes,
                 'performed_by'     => $performedBy,
+                'user_id'          => $userId,
                 'transaction_date' => now(),
                 'is_sub_unit'      => $isSubUnitUsage
             ]);
@@ -326,5 +328,33 @@ class StockService
         // Eğer collision olursa DB Unique Index hata fırlatacak ve bir üst katman (DB::transaction) retry yapacak.
         $uuid = strtoupper(substr(Str::uuid()->toString(), 0, 8));
         return 'TXN-' . $date . '-' . $uuid;
+    }
+    public function reverseTransaction(int $transactionId): bool
+    {
+        return DB::transaction(function () use ($transactionId) {
+            $transaction = \App\Modules\Stock\Models\StockTransaction::findOrFail($transactionId);
+            $stock = $transaction->stock()->lockForUpdate()->first();
+            
+            if (!$stock) return false;
+
+            // Reverse the quantity
+            $isNegativeEffect = in_array($transaction->type, ['usage', 'damaged', 'expired', 'transfer_out']);
+            $quantity = $transaction->quantity;
+
+            if ($isNegativeEffect) {
+                $stock->current_stock += $quantity;
+                $stock->available_stock += $quantity;
+            } else {
+                $stock->current_stock -= $quantity;
+                $stock->available_stock -= $quantity;
+            }
+
+            $stock->save();
+            
+            // Dispatch event to update product total
+            \App\Events\Stock\StockLevelChanged::dispatch($stock, $stock->company_id, $stock->clinic_id);
+
+            return $transaction->delete();
+        });
     }
 }

@@ -90,6 +90,7 @@ Route::prefix('api')->middleware(['api', 'auth:sanctum'])->group(function () {
         Route::get('/stock/{stockId}', [StockTransactionController::class, 'getByStock'])->middleware('permission:view-audit-logs');
         Route::get('/clinic/{clinicId}', [StockTransactionController::class, 'getByClinic'])->middleware('permission:view-audit-logs');
         Route::get('/{id}', [StockTransactionController::class, 'show'])->middleware('permission:view-audit-logs');
+        Route::post('/{id}/reverse', [StockTransactionController::class, 'reverse'])->middleware('permission:adjust-stocks');
     });
 
     // Stock Alerts

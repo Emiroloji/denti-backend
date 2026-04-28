@@ -18,7 +18,7 @@ class Stock extends Model
 
     protected $fillable = [
         'product_id', 'supplier_id', 'purchase_price', 'currency', 'purchase_date', 'expiry_date',
-        'current_stock', 'reserved_stock', 'available_stock',
+        'current_stock', 'reserved_stock', 'available_stock', 'internal_usage_count',
         'status', 'is_active', 'track_expiry', 'track_batch',
         'expiry_yellow_days', 'expiry_red_days',
         'clinic_id', 'storage_location',
