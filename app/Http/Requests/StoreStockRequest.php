@@ -19,21 +19,15 @@ class StoreStockRequest extends FormRequest
         return [
             'product_id' => [
                 'required',
-                Rule::exists('products', 'id')->where(function ($query) use ($companyId) {
-                    return $query->where('company_id', $companyId);
-                }),
+                new \App\Rules\CompanyOwned('products')
             ],
             'supplier_id' => [
                 'required',
-                Rule::exists('suppliers', 'id')->where(function ($query) use ($companyId) {
-                    return $query->where('company_id', $companyId);
-                }),
+                new \App\Rules\CompanyOwned('suppliers')
             ],
             'clinic_id' => [
                 'required',
-                Rule::exists('clinics', 'id')->where(function ($query) use ($companyId) {
-                    return $query->where('company_id', $companyId);
-                }),
+                new \App\Rules\CompanyOwned('clinics')
             ],
             'purchase_price' => 'required|numeric|min:0',
             'currency' => 'nullable|string|max:10',

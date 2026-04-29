@@ -16,12 +16,29 @@ class CheckAllStockLevelsJob implements ShouldQueue
 
     public function handle(StockAlertService $stockAlertService)
     {
-        Stock::active()->chunk(100, function ($stocks) use ($stockAlertService) {
+        $lowStocks = [];
+
+        // Collect all stocks that need alerts
+        Stock::active()->with(['product', 'clinic.company'])->chunk(100, function ($stocks) use (&$lowStocks, $stockAlertService) {
             foreach ($stocks as $stock) {
-                $stockAlertService->checkAndCreateAlerts($stock);
+                // We use checkAndCreateAlerts but without immediate notification if possible
+                // For simplicity, let's just collect those that HAVE alerts
+                $alerts = $stockAlertService->checkAndGetAlerts($stock);
+                if (!empty($alerts)) {
+                    $companyId = $stock->company_id;
+                    $lowStocks[$companyId][] = [
+                        'stock' => $stock,
+                        'alerts' => $alerts
+                    ];
+                }
             }
         });
 
-        \Log::info('All stock levels checked');
+        // Send Digest Notifications per Company
+        foreach ($lowStocks as $companyId => $items) {
+            $stockAlertService->sendDigestNotification($companyId, $items);
+        }
+
+        \Log::info('All stock levels checked and digests sent.');
     }
 }

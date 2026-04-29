@@ -66,6 +66,7 @@ export const StockModals: React.FC<StockModalsProps> = ({
         onCancel={onFormModalClose}
         footer={null}
         width={800}
+        destroyOnClose={true}
       >
         <ProductForm 
           initialValues={editingStock}
@@ -81,7 +82,7 @@ export const StockModals: React.FC<StockModalsProps> = ({
         onCancel={onAdjustModalClose}
         footer={null}
         width={500}
-        destroyOnHidden
+        destroyOnClose={true}
       >
         <Form
           form={adjustForm}
@@ -197,6 +198,7 @@ export const StockModals: React.FC<StockModalsProps> = ({
         onCancel={onUseModalClose}
         footer={null}
         width={500}
+        destroyOnClose={true}
       >
         <Form
           form={useForm}

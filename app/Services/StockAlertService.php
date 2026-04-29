@@ -21,6 +21,31 @@ class StockAlertService
 
     public function checkAndCreateAlerts(Stock $stock): void
     {
+        $alerts = $this->calculateAlertsForStock($stock);
+        
+        if (empty($alerts)) {
+            $this->forceDeleteAlertsByStock($stock->id);
+            return;
+        }
+
+        // Mevcut alarmları tamamen temizle ve yenilerini ekle
+        $this->forceDeleteAlertsByStock($stock->id);
+
+        foreach ($alerts as $alertData) {
+            $this->createAlert($stock, $alertData);
+        }
+    }
+
+    /**
+     * Sadece uyarıları hesaplar ama kaydetmez/bildirim atmaz.
+     */
+    public function checkAndGetAlerts(Stock $stock): array
+    {
+        return $this->calculateAlertsForStock($stock);
+    }
+
+    protected function calculateAlertsForStock(Stock $stock): array
+    {
         // Ensure product is loaded
         if (!$stock->relationLoaded('product')) {
             $stock->load('product');
@@ -30,12 +55,8 @@ class StockAlertService
 
         // Pasif stoklar veya ürünü olmayan stoklar için uyarı üretme
         if (!$stock->is_active || !$product) {
-            $this->forceDeleteAlertsByStock($stock->id);
-            return;
+            return [];
         }
-
-        // Mevcut alarmları tamamen temizle
-        $this->forceDeleteAlertsByStock($stock->id);
 
         $alerts = [];
         // Toplam ürün stoğunu kontrol et
@@ -75,7 +96,6 @@ class StockAlertService
             $yellowDays = $stock->expiry_yellow_days ?? 30;
 
             if ($daysToExpiry < 0) {
-                // Süresi geçmiş
                 $alerts[] = [
                     'type' => 'expired',
                     'title' => 'Süresi Geçen Ürün',
@@ -83,7 +103,6 @@ class StockAlertService
                     'expiry_date' => $stock->expiry_date
                 ];
             } elseif ($daysToExpiry <= $redDays) {
-                // Kritik süresi yaklaşan (Kırmızı)
                 $alerts[] = [
                     'type' => 'critical_expiry',
                     'title' => 'Kritik Son Kullanma Tarihi',
@@ -91,7 +110,6 @@ class StockAlertService
                     'expiry_date' => $stock->expiry_date
                 ];
             } elseif ($daysToExpiry <= $yellowDays) {
-                // Süresi yaklaşan (Sarı)
                 $alerts[] = [
                     'type' => 'near_expiry',
                     'title' => 'Son Kullanma Tarihi Yaklaşıyor',
@@ -101,10 +119,7 @@ class StockAlertService
             }
         }
 
-        // Alarmları oluştur
-        foreach ($alerts as $alertData) {
-            $this->createAlert($stock, $alertData);
-        }
+        return $alerts;
     }
 
     protected function createAlert(Stock $stock, array $alertData): StockAlert
@@ -134,13 +149,26 @@ class StockAlertService
         $this->stockAlertRepository->deleteActiveAlerts($stockId);
     }
 
+    public function sendDigestNotification(int $companyId, array $items): void
+    {
+        $company = \App\Models\Company::find($companyId);
+        if (!$company) return;
+
+        // Şirket sahibini veya yöneticileri bul
+        $users = \App\Models\User::where('company_id', $companyId)
+            ->whereHas('roles', function($q) {
+                $q->whereIn('name', ['Owner', 'Admin']);
+            })->get();
+
+        if ($users->isEmpty()) return;
+
+        // Özet bildirimi gönder
+        Notification::send($users, new \App\Notifications\StockAlertDigestNotification($items));
+    }
+
     protected function sendAlertNotification(StockAlert $alert): void
     {
-        // Klinik sorumlusuna bildirim gönder
-        $clinic = $alert->clinic;
-        if ($clinic->responsible_person) {
-            // Burada notification gönderilebilir
-        }
+        // ... individual notification if needed ...
     }
 
     public function getActiveAlerts(array $filters = []): Collection

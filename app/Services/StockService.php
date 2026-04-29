@@ -17,8 +17,7 @@ class StockService
     public function __construct(
         protected StockRepositoryInterface $stockRepository,
         protected StockCalculatorService $calculatorService,
-        protected StockTransactionService $transactionService,
-        protected StockAlertService $stockAlertService
+        protected StockTransactionService $transactionService
     ) {}
 
     public function getAllStocks(array $filters = [], int $perPage = 50)
@@ -217,6 +216,9 @@ class StockService
             throw new InsufficientStockException($stock->total_base_units, $quantity);
         }
 
+        // 🛡️ DIVISION BY ZERO PROTECTION
+        $multiplier = max(1, (int) ($stock->sub_unit_multiplier ?? 1));
+        
         // 🛡️ KRITIK DÜZELTME: Rezerve stok sadece ANA BIRIM üzerinden takip ediliyor.
         // Alt birim kullanımı durumunda rezerve düşmek istiyorsak, 
         // ya tam birim düşmeliyiz ya da bu işleme izin vermemeliyiz.

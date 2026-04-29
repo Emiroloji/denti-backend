@@ -33,16 +33,12 @@ class StoreProductRequest extends FormRequest
             'clinic_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('clinics', 'id')->where(function ($query) use ($companyId) {
-                    return $query->where('company_id', $companyId);
-                }),
+                new \App\Rules\CompanyOwned('clinics')
             ],
             'supplier_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('suppliers', 'id')->where(function ($query) use ($companyId) {
-                    return $query->where('company_id', $companyId);
-                }),
+                new \App\Rules\CompanyOwned('suppliers')
             ],
             'purchase_price' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|max:10',

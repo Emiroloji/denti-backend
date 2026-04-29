@@ -206,18 +206,41 @@ export const useStocks = (filters?: StockFilter) => {
   const useStockMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: StockUsageRequest }) =>
       stockApi.useStock(id, data),
+    onMutate: async ({ id, data }) => {
+      // 🛡️ Cancel outgoing refetches to avoid race conditions
+      await queryClient.cancelQueries({ queryKey: ['stocks'] })
+      await queryClient.cancelQueries({ queryKey: ['stocks', id] })
+
+      // Snapshot the previous value
+      const previousStocks = queryClient.getQueryData(['stocks'])
+      const previousStock = queryClient.getQueryData(['stocks', id])
+
+      // Optimistic update
+      if (previousStocks) {
+        // ... (optional: can manually update list here for even faster UI)
+      }
+
+      return { previousStocks, previousStock }
+    },
     onSuccess: (_, variables) => {
       // Granular invalidation
       queryClient.invalidateQueries({ queryKey: ['stocks', variables.id] })
       queryClient.invalidateQueries({ queryKey: ['stocks', variables.id, 'transactions'] })
       queryClient.invalidateQueries({ queryKey: ['stock-stats'] })
-      
-      // Still need to invalidate the main list as quantity changed
       queryClient.invalidateQueries({ queryKey: ['stocks'] })
       
       message.success('Stok kullanımı başarıyla kaydedildi!')
     },
-    onError: handleError('Stok kullanımı kaydedilirken hata oluştu!')
+    onError: (error, variables, context) => {
+      // 🛡️ Rollback on error
+      if (context?.previousStocks) {
+        queryClient.setQueryData(['stocks'], context.previousStocks)
+      }
+      if (context?.previousStock) {
+        queryClient.setQueryData(['stocks', variables.id], context.previousStock)
+      }
+      handleError('Stok kullanımı kaydedilirken hata oluştu!')(error)
+    },
   })
 
   return {

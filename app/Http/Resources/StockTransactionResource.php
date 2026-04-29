@@ -26,7 +26,12 @@ class StockTransactionResource extends JsonResource
                 'id' => $this->user?->id,
                 'name' => $this->user?->name,
             ]),
-            'stock' => new StockResource($this->whenLoaded('stock')),
+            'stock' => $this->whenLoaded('stock', [
+                'id' => $this->stock?->id,
+                'batch_number' => $this->stock?->batch_number,
+                'expiry_date' => $this->stock?->expiry_date,
+                'product_name' => $this->stock?->product?->name,
+            ]),
         ];
     }
 }

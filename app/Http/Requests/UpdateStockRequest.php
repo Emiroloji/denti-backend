@@ -19,7 +19,11 @@ class UpdateStockRequest extends FormRequest
             'unit' => 'sometimes|required|string|max:50',
             'category' => 'nullable|string|max:100',
             'brand' => 'nullable|string|max:100',
-            'supplier_id' => 'sometimes|required|exists:suppliers,id',
+            'supplier_id' => [
+                'sometimes',
+                'required',
+                new \App\Rules\CompanyOwned('suppliers')
+            ],
             'purchase_price' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|max:10',
             'purchase_date' => 'nullable|date',
