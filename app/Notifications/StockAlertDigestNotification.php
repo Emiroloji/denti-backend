@@ -39,13 +39,22 @@ class StockAlertDigestNotification extends Notification implements ShouldQueue
             ->line('Aşağıdaki ürünler kritik stok seviyesinin altına düşmüştür:')
             ->divider();
 
-        foreach ($this->items as $item) {
+        $maxItems = 100;
+        $itemsToShow = array_slice($this->items, 0, $maxItems);
+        $remainingCount = count($this->items) - $maxItems;
+
+        foreach ($itemsToShow as $item) {
             $stock = $item['stock'];
             $alerts = $item['alerts'];
             
             foreach ($alerts as $alert) {
                 $message->line("**{$stock->product->name}**: " . $alert['message']);
             }
+        }
+
+        if ($remainingCount > 0) {
+            $message->divider()
+                ->line("...ve uyarı eşiğindeki diğer {$remainingCount} adet ürün daha mevcut.");
         }
 
         return $message

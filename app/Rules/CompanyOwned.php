@@ -21,12 +21,12 @@ class CompanyOwned implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $companyId = auth()->user()?->company_id;
-
-        if (!$companyId) {
-            $fail('Oturum geçersiz.');
+        // 🛡️ CLI veya Schedule ortamında auth()->user() null olabilir.
+        if (!auth()->check()) {
             return;
         }
+
+        $companyId = auth()->user()->company_id;
 
         $exists = DB::table($this->table)
             ->where($this->column, $value)

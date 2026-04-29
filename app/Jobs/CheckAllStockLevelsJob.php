@@ -13,6 +13,16 @@ use Illuminate\Queue\SerializesModels;
 class CheckAllStockLevelsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    
+    /**
+     * İşlem başarısız olursa kaç kez tekrar deneneceği.
+     */
+    public int $tries = 3;
+    
+    /**
+     * Tekrar denemeden önce beklenecek saniye.
+     */
+    public int $backoff = 60;
 
     public function handle(StockAlertService $stockAlertService)
     {
