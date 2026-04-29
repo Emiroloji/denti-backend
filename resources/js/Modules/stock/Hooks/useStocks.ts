@@ -207,12 +207,14 @@ export const useStocks = (filters?: StockFilter) => {
     mutationFn: ({ id, data }: { id: number; data: StockUsageRequest }) =>
       stockApi.useStock(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['stocks'] })
+      // Granular invalidation
+      queryClient.invalidateQueries({ queryKey: ['stocks', variables.id] })
+      queryClient.invalidateQueries({ queryKey: ['stocks', variables.id, 'transactions'] })
       queryClient.invalidateQueries({ queryKey: ['stock-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['stock-levels'] })
-      // Invalidate specific product transactions if we have the product_id
-      // For now, invalidate all transactions to be safe
-      queryClient.invalidateQueries({ queryKey: ['stocks', 'transactions'] })
+      
+      // Still need to invalidate the main list as quantity changed
+      queryClient.invalidateQueries({ queryKey: ['stocks'] })
+      
       message.success('Stok kullanımı başarıyla kaydedildi!')
     },
     onError: handleError('Stok kullanımı kaydedilirken hata oluştu!')

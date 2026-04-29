@@ -7,7 +7,7 @@ const { Title, Text } = Typography;
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({
-        clinic_code: '',
+        company_code: '',
         username: '',
         password: '',
         remember: true,
@@ -44,14 +44,14 @@ export default function Login() {
                     size="large"
                 >
                     <Form.Item
-                        validateStatus={errors.clinic_code ? 'error' : ''}
-                        help={errors.clinic_code}
+                        validateStatus={errors.company_code ? 'error' : ''}
+                        help={errors.company_code}
                     >
                         <Input 
                             prefix={<BankOutlined />} 
                             placeholder="Klinik Kodu" 
-                            value={data.clinic_code}
-                            onChange={e => setData('clinic_code', e.target.value)}
+                            value={data.company_code}
+                            onChange={e => setData('company_code', e.target.value)}
                         />
                     </Form.Item>
 

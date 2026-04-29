@@ -20,7 +20,7 @@ class AuthController extends Controller
 
     private function throttleKey(LoginRequest $request): string
     {
-        return Str::lower($request->input('username')) . '|' . $request->input('clinic_code') . '|' . $request->ip();
+        return Str::lower($request->input('username')) . '|' . $request->input('company_code') . '|' . $request->ip();
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -32,18 +32,18 @@ class AuthController extends Controller
             return $this->error("Çok fazla giriş denemesi. {$seconds} saniye sonra tekrar deneyin.", 429);
         }
 
-        // 1. Şirketi veya Kliniği bul
-        if (!$request->clinic_code) {
+        // 1. Şirketi bul
+        if (!$request->company_code) {
             RateLimiter::hit($throttleKey, 60);
-            return $this->error('Klinik kodu gereklidir.', 422);
+            return $this->error('Şirket kodu gereklidir.', 422);
         }
 
         // Şirket koduna bakıyoruz
-        $company = Company::where('code', $request->clinic_code)->first();
+        $company = Company::where('code', $request->company_code)->first();
         
         if (!$company) {
             RateLimiter::hit($throttleKey, 60);
-            return $this->error('Geçersiz klinik kodu, kullanıcı adı veya şifre', 422);
+            return $this->error('Geçersiz şirket kodu, kullanıcı adı veya şifre', 422);
         }
 
         // 2. Kullanıcıyı doğrula
@@ -53,11 +53,6 @@ class AuthController extends Controller
             'company_id' => $company->id,
             'is_active'  => true
         ];
-
-        // Eğer klinik kodu ile girildiyse, kullanıcının o kliniğe ait olduğundan emin ol (Super Admin değilse)
-        // Not: Bazı kullanıcılar sadece şirkete bağlı olabilir (clinic_id null).
-        // Eğer klinikId doluysa ve kullanıcı Super Admin değilse, clinic_id kontrolü eklenebilir.
-        // Ancak şimdilik sadece company_id üzerinden gidelim, login sonrası clinic_id session'da tutulabilir.
 
         if (Auth::attempt($credentials)) {
             RateLimiter::clear($throttleKey);
@@ -83,7 +78,7 @@ class AuthController extends Controller
 
         RateLimiter::hit($throttleKey, 60);
 
-        return $this->error('Geçersiz klinik kodu, kullanıcı adı veya şifre', 422);
+        return $this->error('Geçersiz şirket kodu, kullanıcı adı veya şifre', 422);
     }
 
     public function adminLogin(Request $request): JsonResponse

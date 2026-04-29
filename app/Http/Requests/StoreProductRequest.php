@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProductRequest extends FormRequest
 {
@@ -13,6 +14,8 @@ class StoreProductRequest extends FormRequest
 
     public function rules(): array
     {
+        $companyId = auth()->user()->company_id;
+
         return [
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:50',
@@ -27,8 +30,20 @@ class StoreProductRequest extends FormRequest
             'is_active' => 'boolean',
             'has_expiration_date' => 'boolean',
             'initial_stock' => 'nullable|numeric|min:0',
-            'clinic_id' => 'nullable|integer',
-            'supplier_id' => 'nullable|integer',
+            'clinic_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('clinics', 'id')->where(function ($query) use ($companyId) {
+                    return $query->where('company_id', $companyId);
+                }),
+            ],
+            'supplier_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('suppliers', 'id')->where(function ($query) use ($companyId) {
+                    return $query->where('company_id', $companyId);
+                }),
+            ],
             'purchase_price' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|max:10',
             'purchase_date' => 'nullable|date',

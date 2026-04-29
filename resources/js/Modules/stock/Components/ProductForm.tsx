@@ -30,7 +30,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSuccess, onCancel, i
 
   useEffect(() => {
     if (initialValues) {
-      form.setFieldsValue(initialValues)
+      const values = {
+        ...initialValues,
+        expiry_date: initialValues.expiry_date ? dayjs(initialValues.expiry_date) : null,
+        purchase_date: initialValues.purchase_date ? dayjs(initialValues.purchase_date) : null,
+      }
+      form.setFieldsValue(values)
     } else {
       form.resetFields()
     }

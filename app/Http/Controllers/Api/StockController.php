@@ -48,7 +48,7 @@ class StockController extends Controller
 
             return $this->success(StockResource::collection($stocks));
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Index Error: ' . $e->getMessage(), ['user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -66,7 +66,7 @@ class StockController extends Controller
 
             return $this->success(new StockResource($stock));
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Show Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -85,7 +85,7 @@ class StockController extends Controller
 
             return $this->success(StockTransactionResource::collection($transactions));
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Transactions Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -95,8 +95,7 @@ class StockController extends Controller
         try {
             $data = $request->validated();
 
-            // Set defaults for batch
-            $data['company_id'] = auth()->user()->company_id;
+            // Defaults (moved business logic preference to service but keep these simple defaults if needed)
             $data['currency'] = $data['currency'] ?? 'TRY';
             $data['track_expiry'] = $data['track_expiry'] ?? true;
 
@@ -104,14 +103,13 @@ class StockController extends Controller
 
             $stock = $this->stockService->createStock($data);
             
-            // Fix: Load product for Resource naming (avoids undefined/null error)
             $stock->load('product');
 
             return $this->success(new StockResource($stock), 'Stok başarıyla oluşturuldu', 201);
         } catch (\Exception $e) {
             Log::error('Stock Store Error: ' . $e->getMessage(), [
-                'request' => $request->all(),
-                'trace' => $e->getTraceAsString()
+                'user_id' => auth()->id(),
+                'request' => $request->all()
             ]);
             return $this->error(__('messages.server_error'), 500);
         }
@@ -137,7 +135,7 @@ class StockController extends Controller
 
             return $this->success(new StockResource($stock), 'Stok başarıyla güncellendi');
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Update Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -152,11 +150,11 @@ class StockController extends Controller
 
             $this->authorize('delete', $stock);
 
-            $deleted = $this->stockService->deleteStock((int)$id);
+            $this->stockService->deleteStock((int)$id);
 
             return $this->success(null, 'Stok başarıyla silindi');
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Destroy Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -183,7 +181,6 @@ class StockController extends Controller
                 return $this->success(new StockResource($stock), 'Stok miktarı zaten hedeflenen seviyede.');
             }
 
-            // 🔒 Güvenlik: Kim yaptı bilgisini asla client'tan alma, oturum'dan al
             $performedBy = auth()->user()->name;
 
             $this->authorize('adjust', $stock);
@@ -202,7 +199,7 @@ class StockController extends Controller
         } catch (InsufficientStockException $e) {
             return $this->error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Adjust Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -219,7 +216,6 @@ class StockController extends Controller
                 $notes .= "\nSebep: " . $data['reason'];
             }
 
-            // 🔒 Güvenlik: Kim yaptı bilgisini asla client'tan alma, oturum'dan al
             $performedBy = auth()->user()->name;
 
             $stock = $this->stockService->getStockById((int)$id);
@@ -244,7 +240,7 @@ class StockController extends Controller
         } catch (InsufficientStockException $e) {
             return $this->error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Use Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -258,7 +254,7 @@ class StockController extends Controller
 
             return $this->success(StockResource::collection($items));
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock LowLevel Error: ' . $e->getMessage(), ['user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -272,7 +268,7 @@ class StockController extends Controller
 
             return $this->success(StockResource::collection($items));
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock CriticalLevel Error: ' . $e->getMessage(), ['user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -287,7 +283,7 @@ class StockController extends Controller
 
             return $this->success(StockResource::collection($items));
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Expiring Error: ' . $e->getMessage(), ['user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -303,7 +299,7 @@ class StockController extends Controller
 
             return $this->success($stats);
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock Stats Error: ' . $e->getMessage(), ['user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -319,7 +315,7 @@ class StockController extends Controller
 
             return $this->success(null, 'Stok kalıcı olarak silindi');
         } catch (\Exception $e) {
-            Log::error($e);
+            Log::error('Stock ForceDelete Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -341,7 +337,7 @@ class StockController extends Controller
 
             return $this->success(new StockResource($updatedStock->load('product')), 'Stok pasif duruma getirildi');
         } catch (\Exception $e) {
-            Log::error('Stock Deactivate Error: ' . $e->getMessage());
+            Log::error('Stock Deactivate Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
@@ -363,7 +359,7 @@ class StockController extends Controller
 
             return $this->success(new StockResource($updatedStock->load('product')), 'Stok başarıyla aktif edildi');
         } catch (\Exception $e) {
-            Log::error('Stock Reactivate Error: ' . $e->getMessage());
+            Log::error('Stock Reactivate Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
             return $this->error(__('messages.server_error'), 500);
         }
     }
