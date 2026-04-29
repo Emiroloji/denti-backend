@@ -18,7 +18,48 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Category Repository
+        $this->app->bind(
+            \App\Repositories\Interfaces\CategoryRepositoryInterface::class,
+            \App\Repositories\CategoryRepository::class
+        );
+
+        // Todo Repository
+        $this->app->bind(
+            \App\Repositories\Interfaces\TodoRepositoryInterface::class,
+            \App\Repositories\TodoRepository::class
+        );
+
+        // Stock Repositories
+        $this->app->bind(
+            \App\Repositories\Interfaces\StockRepositoryInterface::class,
+            \App\Repositories\StockRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\SupplierRepositoryInterface::class,
+            \App\Repositories\SupplierRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\ClinicRepositoryInterface::class,
+            \App\Repositories\ClinicRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\StockRequestRepositoryInterface::class,
+            \App\Repositories\StockRequestRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\StockTransactionRepositoryInterface::class,
+            \App\Repositories\StockTransactionRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Interfaces\StockAlertRepositoryInterface::class,
+            \App\Repositories\StockAlertRepository::class
+        );
     }
 
     /**
@@ -31,7 +72,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(StockLevelChanged::class, CheckStockAlertsListener::class);
         Event::listen(StockLevelChanged::class, ClearStockCacheListener::class);
 
-        Gate::policy(\App\Modules\Stock\Models\Stock::class, \App\Modules\Stock\Policies\StockPolicy::class);
+        Gate::policy(\App\Models\Stock::class, \App\Policies\StockPolicy::class);
 
         // Implicitly grant "Super Admin" role all permissions
         // This works in the app by using gate-related functions like auth()->user->can() and @can()

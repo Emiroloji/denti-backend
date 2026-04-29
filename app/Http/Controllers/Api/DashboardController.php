@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Modules\Stock\Models\Stock;
-use App\Modules\Stock\Models\Clinic;
+use App\Models\Stock;
+use App\Models\Clinic;
 use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;

@@ -86,6 +86,6 @@ class User extends Authenticatable
      */
     public function clinic(): BelongsTo
     {
-        return $this->belongsTo(\App\Modules\Stock\Models\Clinic::class);
+        return $this->belongsTo(\App\Models\Clinic::class);
     }
 }

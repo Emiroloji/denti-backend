@@ -25,8 +25,8 @@ Route::middleware(['auth'])->group(function () {
         return Inertia::render('Admin/Index');
     })->name('admin.companies');
 
-    Route::get('/stocks', [App\Modules\Stock\Controllers\ProductInertiaController::class, 'index'])->name('stocks.index');
-    Route::get('/stock/products/{id}', [App\Modules\Stock\Controllers\ProductInertiaController::class, 'show'])->name('products.show');
+    Route::get('/stocks', [App\Http\Controllers\Api\ProductInertiaController::class, 'index'])->name('stocks.index');
+    Route::get('/stock/products/{id}', [App\Http\Controllers\Api\ProductInertiaController::class, 'show'])->name('products.show');
 
     Route::get('/stock-categories', function () {
         return Inertia::render('Category/Index');

@@ -2,7 +2,7 @@
 
 namespace App\Events\Stock;
 
-use App\Modules\Stock\Models\Stock;
+use App\Models\Stock;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

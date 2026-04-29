@@ -43,12 +43,124 @@ Route::middleware(['auth:sanctum', '2fa.verified'])->group(function () {
     // Role Management (Company Owners)
     Route::get('/roles/permissions', [RoleController::class, 'permissions']);
     Route::apiResource('roles', RoleController::class);
+
+    // Categories
+    Route::prefix('categories')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\CategoryController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\CategoryController::class, 'show']);
+        Route::get('/{id}/stats', [\App\Http\Controllers\Api\CategoryController::class, 'stats']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\CategoryController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\CategoryController::class, 'destroy']);
+    });
+
+    // Todo
+    Route::prefix('todos')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\TodoController::class, 'index'])->middleware('permission:view-todos');
+        Route::post('/', [\App\Http\Controllers\Api\TodoController::class, 'store'])->middleware('permission:manage-todos');
+        Route::get('/stats', [\App\Http\Controllers\Api\TodoController::class, 'stats'])->middleware('permission:view-todos');
+        Route::get('/category/{categoryId}', [\App\Http\Controllers\Api\TodoController::class, 'byCategory'])->middleware('permission:view-todos');
+        Route::get('/{id}', [\App\Http\Controllers\Api\TodoController::class, 'show'])->middleware('permission:view-todos');
+        Route::put('/{id}', [\App\Http\Controllers\Api\TodoController::class, 'update'])->middleware('permission:manage-todos');
+        Route::patch('/{id}/toggle', [\App\Http\Controllers\Api\TodoController::class, 'toggle'])->middleware('permission:manage-todos');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\TodoController::class, 'destroy'])->middleware('permission:manage-todos');
+    });
+
+    // Products
+    Route::prefix('products')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\ProductController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/', [\App\Http\Controllers\Api\ProductController::class, 'store'])->middleware('permission:create-stocks');
+        Route::get('/{id}', [\App\Http\Controllers\Api\ProductController::class, 'show'])->middleware('permission:view-stocks');
+        Route::put('/{id}', [\App\Http\Controllers\Api\ProductController::class, 'update'])->middleware('permission:update-stocks');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\ProductController::class, 'destroy'])->middleware('permission:delete-stocks');
+        Route::get('/{id}/transactions', [\App\Http\Controllers\Api\ProductController::class, 'transactions'])->middleware('permission:view-audit-logs');
+    });
+
+    // Stocks (now Batches)
+    Route::prefix('stocks')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\ProductController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/', [\App\Http\Controllers\Api\StockController::class, 'store'])->middleware('permission:create-stocks');
+        Route::get('/batches', [\App\Http\Controllers\Api\StockController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/batches', [\App\Http\Controllers\Api\StockController::class, 'store'])->middleware('permission:create-stocks');
+        Route::get('/stats', [\App\Http\Controllers\Api\StockController::class, 'getStats'])->middleware('permission:view-reports');
+        Route::get('/low-level', [\App\Http\Controllers\Api\StockController::class, 'getLowLevel'])->middleware('permission:view-stocks');
+        Route::get('/critical-level', [\App\Http\Controllers\Api\StockController::class, 'getCriticalLevel'])->middleware('permission:view-stocks');
+        Route::get('/expiring', [\App\Http\Controllers\Api\StockController::class, 'getExpiring'])->middleware('permission:view-stocks');
+        Route::put('/{id}/deactivate', [\App\Http\Controllers\Api\StockController::class, 'deactivate'])->middleware('permission:update-stocks');
+        Route::delete('/{id}/force', [\App\Http\Controllers\Api\StockController::class, 'forceDelete'])->middleware('permission:delete-stocks');
+        Route::put('/{id}/reactivate', [\App\Http\Controllers\Api\StockController::class, 'reactivate'])->middleware('permission:update-stocks');
+        Route::get('/{id}', [\App\Http\Controllers\Api\StockController::class, 'show'])->middleware('permission:view-stocks');
+        Route::put('/{id}', [\App\Http\Controllers\Api\StockController::class, 'update'])->middleware('permission:update-stocks');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\StockController::class, 'destroy'])->middleware('permission:delete-stocks');
+        Route::post('/{id}/adjust', [\App\Http\Controllers\Api\StockController::class, 'adjustStock'])->middleware('permission:adjust-stocks');
+        Route::post('/{id}/use', [\App\Http\Controllers\Api\StockController::class, 'useStock'])->middleware('permission:use-stocks');
+        Route::get('/{id}/transactions', [\App\Http\Controllers\Api\StockController::class, 'transactions'])->middleware('permission:view-audit-logs');
+    });
+
+    // Suppliers
+    Route::prefix('suppliers')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\SupplierController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/', [\App\Http\Controllers\Api\SupplierController::class, 'store'])->middleware('permission:create-stocks');
+        Route::get('/active/list', [\App\Http\Controllers\Api\SupplierController::class, 'getActive'])->middleware('permission:view-stocks');
+        Route::get('/{id}', [\App\Http\Controllers\Api\SupplierController::class, 'show'])->middleware('permission:view-stocks');
+        Route::put('/{id}', [\App\Http\Controllers\Api\SupplierController::class, 'update'])->middleware('permission:update-stocks');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\SupplierController::class, 'destroy'])->middleware('permission:delete-stocks');
+    });
+
+    // Clinics
+    Route::prefix('clinics')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\ClinicController::class, 'index'])->middleware('permission:view-clinics');
+        Route::post('/', [\App\Http\Controllers\Api\ClinicController::class, 'store'])->middleware('permission:create-clinics');
+        Route::get('/active/list', [\App\Http\Controllers\Api\ClinicController::class, 'getActive'])->middleware('permission:view-stocks');
+        Route::get('/stats', [\App\Http\Controllers\Api\ClinicController::class, 'getStats'])->middleware('permission:view-reports');
+        Route::get('/{id}', [\App\Http\Controllers\Api\ClinicController::class, 'show'])->middleware('permission:view-clinics');
+        Route::put('/{id}', [\App\Http\Controllers\Api\ClinicController::class, 'update'])->middleware('permission:update-clinics');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\ClinicController::class, 'destroy'])->middleware('permission:delete-clinics');
+        Route::get('/{id}/stocks', [\App\Http\Controllers\Api\ClinicController::class, 'getStocks'])->middleware('permission:view-stocks');
+        Route::get('/{id}/summary', [\App\Http\Controllers\Api\ClinicController::class, 'getSummary'])->middleware('permission:view-reports');
+    });
+
+    // Stock Requests
+    Route::prefix('stock-requests')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\StockRequestController::class, 'index'])->middleware('permission:view-stocks');
+        Route::post('/', [\App\Http\Controllers\Api\StockRequestController::class, 'store'])->middleware('permission:create-stocks');
+        Route::get('/pending/list', [\App\Http\Controllers\Api\StockRequestController::class, 'getPendingRequests'])->middleware('permission:view-stocks');
+        Route::get('/stats', [\App\Http\Controllers\Api\StockRequestController::class, 'getStats'])->middleware('permission:view-stocks');
+        Route::get('/{id}', [\App\Http\Controllers\Api\StockRequestController::class, 'show'])->middleware('permission:view-stocks');
+        Route::put('/{id}/approve', [\App\Http\Controllers\Api\StockRequestController::class, 'approve'])->middleware('permission:adjust-stocks');
+        Route::put('/{id}/reject', [\App\Http\Controllers\Api\StockRequestController::class, 'reject'])->middleware('permission:adjust-stocks');
+        Route::put('/{id}/complete', [\App\Http\Controllers\Api\StockRequestController::class, 'complete'])->middleware('permission:adjust-stocks');
+    });
+
+    // Stock Transactions
+    Route::prefix('stock-transactions')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\StockTransactionController::class, 'index'])->middleware('permission:view-audit-logs');
+        Route::get('/stock/{stockId}', [\App\Http\Controllers\Api\StockTransactionController::class, 'getByStock'])->middleware('permission:view-audit-logs');
+        Route::get('/clinic/{clinicId}', [\App\Http\Controllers\Api\StockTransactionController::class, 'getByClinic'])->middleware('permission:view-audit-logs');
+        Route::get('/{id}', [\App\Http\Controllers\Api\StockTransactionController::class, 'show'])->middleware('permission:view-audit-logs');
+        Route::post('/{id}/reverse', [\App\Http\Controllers\Api\StockTransactionController::class, 'reverse'])->middleware('permission:adjust-stocks');
+    });
+
+    // Stock Alerts
+    Route::prefix('stock-alerts')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\StockAlertController::class, 'index'])->middleware('permission:view-stocks');
+        Route::get('/pending/count', [\App\Http\Controllers\Api\StockAlertController::class, 'getPendingCount'])->middleware('permission:view-stocks');
+        Route::post('/sync', [\App\Http\Controllers\Api\StockAlertController::class, 'sync'])->middleware('permission:adjust-stocks');
+        Route::get('/active', [\App\Http\Controllers\Api\StockAlertController::class, 'getActive'])->middleware('permission:view-stocks');
+        Route::get('/statistics', [\App\Http\Controllers\Api\StockAlertController::class, 'getStatistics'])->middleware('permission:view-reports');
+        Route::get('/settings', [\App\Http\Controllers\Api\StockAlertController::class, 'getSettings'])->middleware('permission:manage-company');
+        Route::put('/settings', [\App\Http\Controllers\Api\StockAlertController::class, 'updateSettings'])->middleware('permission:manage-company');
+        Route::post('/bulk/resolve', [\App\Http\Controllers\Api\StockAlertController::class, 'bulkResolve'])->middleware('permission:adjust-stocks');
+        Route::post('/bulk/dismiss', [\App\Http\Controllers\Api\StockAlertController::class, 'bulkDismiss'])->middleware('permission:adjust-stocks');
+        Route::post('/bulk/delete', [\App\Http\Controllers\Api\StockAlertController::class, 'bulkDelete'])->middleware('permission:delete-stocks');
+        Route::get('/{id}', [\App\Http\Controllers\Api\StockAlertController::class, 'show'])->middleware('permission:view-stocks');
+        Route::post('/{id}/resolve', [\App\Http\Controllers\Api\StockAlertController::class, 'resolve'])->middleware('permission:adjust-stocks');
+        Route::post('/{id}/dismiss', [\App\Http\Controllers\Api\StockAlertController::class, 'dismiss'])->middleware('permission:adjust-stocks');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\StockAlertController::class, 'destroy'])->middleware('permission:delete-stocks');
+    });
 });
 
 // Super Admin Panel
 Route::middleware(['auth:sanctum', 'role:Super Admin'])->prefix('admin')->group(function () {
     Route::apiResource('companies', CompanyController::class);
 });
-
-// Modül route'ları service provider'lardan otomatik yükleniyor.
-// Tüm modül route'ları kendi içlerinde 'auth:sanctum' middleware'i ile korunmaktadır.

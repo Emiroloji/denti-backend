@@ -1,0 +1,214 @@
+<?php
+// app/Modules/Stock/Models/Stock.php
+
+namespace App\Models;
+
+use App\Models\Company;
+use App\Traits\Tenantable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Stock extends Model
+{
+    use Tenantable, SoftDeletes;
+    
+    protected $appends = [];
+
+    protected $fillable = [
+        'product_id', 'supplier_id', 'purchase_price', 'currency', 'purchase_date', 'expiry_date',
+        'current_stock', 'reserved_stock', 'available_stock', 'internal_usage_count',
+        'status', 'is_active', 'track_expiry', 'track_batch',
+        'expiry_yellow_days', 'expiry_red_days',
+        'clinic_id', 'storage_location',
+        'has_sub_unit', 'sub_unit_name', 'sub_unit_multiplier', 'current_sub_stock',
+        'company_id'
+    ];
+
+    // İlişkiler
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    protected $casts = [
+        'purchase_date' => 'date',
+        'expiry_date' => 'date',
+        'purchase_price' => 'decimal:2',
+        'track_expiry' => 'boolean',
+        'track_batch' => 'boolean',
+        'is_active' => 'boolean',
+        'has_sub_unit' => 'boolean',
+        'sub_unit_multiplier' => 'integer',
+        'current_sub_stock' => 'integer',
+        'expiry_yellow_days' => 'integer',
+        'expiry_red_days' => 'integer',
+    ];
+
+    protected $attributes = [
+        'is_active' => true,
+        'status' => 'active',
+        'track_expiry' => true,
+        'track_batch' => false,
+        'currency' => 'TRY',
+        'current_stock' => 0,
+        'reserved_stock' => 0,
+        'available_stock' => 0,
+        'has_sub_unit' => false,
+        'current_sub_stock' => 0,
+    ];
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Supplier::class);
+    }
+
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Clinic::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(\App\Models\StockTransaction::class);
+    }
+
+    public function requests(): HasMany
+    {
+        return $this->hasMany(\App\Models\StockRequest::class);
+    }
+
+    public function alerts(): HasMany
+    {
+        return $this->hasMany(\App\Models\StockAlert::class);
+    }
+
+    /**
+     * Toplam baz birim miktarını hesaplayan Raw SQL ifadesini döner.
+     * DRY ilkesi için merkezi olarak tanımlanmıştır.
+     */
+    public static function totalBaseUnitsRaw(): string
+    {
+        return "(CASE 
+                    WHEN has_sub_unit = 1 THEN (current_stock * COALESCE(sub_unit_multiplier, 1)) + current_sub_stock 
+                    ELSE current_stock 
+                 END)";
+    }
+
+    // Scope'lar
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeInactive($query)
+    {
+        return $query->where('is_active', false);
+    }
+
+    public function scopeLowStock($query)
+    {
+        return $query->join('products', 'stocks.product_id', '=', 'products.id')
+                     ->whereRaw(self::totalBaseUnitsRaw() . ' <= COALESCE(products.yellow_alert_level, products.min_stock_level)')
+                     ->where('stocks.is_active', true)
+                     ->select('stocks.*');
+    }
+
+    public function scopeCriticalStock($query)
+    {
+        return $query->join('products', 'stocks.product_id', '=', 'products.id')
+                     ->whereRaw(self::totalBaseUnitsRaw() . ' <= COALESCE(products.red_alert_level, products.critical_stock_level)')
+                     ->where('stocks.is_active', true)
+                     ->select('stocks.*');
+    }
+
+    public function scopeNearExpiry($query, $days = null)
+    {
+        return $query->where('track_expiry', true)
+                    ->where('expiry_date', '<=', today()->addDays($days ?? 30))
+                    ->where('expiry_date', '>', today())
+                    ->where('is_active', true);
+    }
+
+    public function scopeExpired($query)
+    {
+        return $query->where('track_expiry', true)
+                    ->where('expiry_date', '<', today())
+                    ->where('is_active', true);
+    }
+
+    // Accessor'lar
+    public function getTotalBaseUnitsAttribute()
+    {
+        if (!$this->has_sub_unit) {
+            return $this->current_stock;
+        }
+        return ($this->current_stock * ($this->sub_unit_multiplier ?? 1)) + $this->current_sub_stock;
+    }
+
+    public function getStockStatusAttribute()
+    {
+        if (!$this->is_active) return 'inactive';
+        
+        $product = $this->product;
+        if (!$product) return 'normal';
+
+        $total = $this->total_base_units;
+        $redLevel = $product->red_alert_level ?? $product->critical_stock_level;
+        $yellowLevel = $product->yellow_alert_level ?? $product->min_stock_level;
+
+        if ($total <= $redLevel) return 'critical';
+        if ($total <= $yellowLevel) return 'low';
+        return 'normal';
+    }
+
+    public function getIsExpiredAttribute()
+    {
+        return $this->track_expiry && $this->expiry_date < today();
+    }
+
+    public function getIsNearExpiryAttribute()
+    {
+        return $this->track_expiry &&
+               $this->expiry_date <= today()->addDays($this->expiry_yellow_days ?? 30) &&
+               $this->expiry_date > today();
+    }
+
+    public function getExpiryStatusAttribute()
+    {
+        if (!$this->track_expiry || !$this->expiry_date) return 'normal';
+        if ($this->expiry_date < today()) return 'expired';
+        
+        $days = $this->days_to_expiry;
+        if ($days <= ($this->expiry_red_days ?? 15)) return 'critical';
+        if ($days <= ($this->expiry_yellow_days ?? 30)) return 'warning';
+        
+        return 'normal';
+    }
+
+    public function getDaysToExpiryAttribute()
+    {
+        if (!$this->track_expiry || !$this->expiry_date) return null;
+        return now()->diffInDays($this->expiry_date, false);
+    }
+
+    // Model Events
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($stock) {
+            // Soft delete sırasında status'ü güncelle ve uyarılrı sil
+            $stock->status = 'deleted';
+            $stock->saveQuietly();
+            
+            // Bağlı uyarıları sil
+            $stock->alerts()->delete();
+        });
+    }
+}

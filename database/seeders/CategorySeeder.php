@@ -22,7 +22,7 @@ class CategorySeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            \App\Modules\Category\Models\Category::create([
+            \App\Models\Category::create([
                 'name' => $category['name'],
                 'color' => $category['color'],
                 'description' => $category['description'],

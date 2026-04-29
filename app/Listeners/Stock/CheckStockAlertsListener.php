@@ -3,7 +3,7 @@
 namespace App\Listeners\Stock;
 
 use App\Events\Stock\StockLevelChanged;
-use App\Modules\Stock\Services\StockAlertService;
+use App\Services\StockAlertService;
 
 /**
  * StockLevelChanged event'ini dinler ve stok seviyesi kontrolünü tetikler.
