@@ -18,20 +18,25 @@ const handleError = (defaultMsg: string) => (error: any) => {
   message.error(error.response?.data?.message || defaultMsg)
 }
 
-export const useProducts = (filters?: any) => {
+export const useProducts = (filters?: any, page: number = 1, perPage: number = 50) => {
   const queryClient = useQueryClient()
 
   const {
-    data: products,
+    data: response,
     isLoading,
     error,
     refetch
   } = useQuery({
-    queryKey: [STOCK_QUERY_KEYS.PRODUCTS, filters],
-    queryFn: () => stockApi.getProducts(filters),
-    select: (response: any) => response.data?.data || response.data,
+    queryKey: [STOCK_QUERY_KEYS.PRODUCTS, filters, page, perPage],
+    queryFn: () => stockApi.getProducts({ ...filters, page, per_page: perPage }),
+    select: (response: any) => ({
+      products: response.data?.data || response.data,
+      meta: response.data?.meta || null,
+    }),
     staleTime: STALE_TIME,
   })
+
+  const { products, meta } = response || { products: [], meta: null }
 
   const createMutation = useMutation({
     mutationFn: stockApi.createProduct,
@@ -64,6 +69,7 @@ export const useProducts = (filters?: any) => {
 
   return {
     products,
+    meta,
     isLoading,
     error,
     refetch,
@@ -218,13 +224,20 @@ export const useStocks = (filters?: StockFilter) => {
 
       return { previousStocks, previousStock }
     },
-    onSuccess: (_, variables) => {
-      // Granular invalidation
-      queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, variables.id] })
-      queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, variables.id, STOCK_QUERY_KEYS.TRANSACTIONS] })
-      queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCK_STATS] })
-      queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS] })
-      
+    onSuccess: async (_, variables) => {
+      // 🔄 Invalidate and refetch for immediate update
+      await queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, variables.id] })
+      await queryClient.refetchQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, variables.id], exact: true })
+
+      await queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, variables.id, STOCK_QUERY_KEYS.TRANSACTIONS] })
+      await queryClient.refetchQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, variables.id, STOCK_QUERY_KEYS.TRANSACTIONS], exact: true })
+
+      await queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCK_STATS] })
+      await queryClient.refetchQueries({ queryKey: [STOCK_QUERY_KEYS.STOCK_STATS], exact: true })
+
+      await queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS] })
+      await queryClient.refetchQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS] })
+
       message.success('Stok kullanımı başarıyla kaydedildi!')
     },
     onError: (error, variables, context) => {

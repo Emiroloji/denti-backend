@@ -76,7 +76,6 @@ export interface Alert {
   }
   
   export interface ResolveAlertRequest {
-    resolved_by: string
     resolution_notes?: string
   }
   

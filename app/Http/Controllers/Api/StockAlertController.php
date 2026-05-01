@@ -8,6 +8,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\StockAlert;
 use App\Services\StockAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -23,6 +24,8 @@ class StockAlertController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('viewAny', StockAlert::class);
+
         $filters = $request->only([
             'clinic_id', 'type', 'severity', 'search', 'date_from', 'date_to'
         ]);
@@ -75,8 +78,11 @@ class StockAlertController extends Controller
 
     public function resolve(Request $request, $id)
     {
+        $alert = $this->stockAlertService->getAlertById($id);
+        $this->authorize('resolve', $alert);
+
         $validator = Validator::make($request->all(), [
-            'resolved_by' => 'required|string|max:255'
+            'resolution_notes' => 'nullable|string|max:1000'
         ]);
 
         if ($validator->fails()) {
@@ -89,7 +95,8 @@ class StockAlertController extends Controller
         try {
             $result = $this->stockAlertService->resolveAlert(
                 $id,
-                $validator->validated()['resolved_by']
+                auth()->user()->name,
+                $validator->validated()['resolution_notes'] ?? null
             );
 
             if (!$result) {
@@ -113,6 +120,8 @@ class StockAlertController extends Controller
 
     public function getStatistics(Request $request)
     {
+        $this->authorize('viewAny', StockAlert::class);
+
         $clinicId = $request->query('clinic_id');
         
         // Otomatik Senkronizasyon
@@ -128,40 +137,39 @@ class StockAlertController extends Controller
 
     public function getPendingCount(Request $request)
     {
+        $this->authorize('viewAny', StockAlert::class);
+
         $clinicId = $request->query('clinic_id');
-        
-        $products = \App\Models\Product::with(['batches' => function($q) use ($clinicId) {
-            if ($clinicId) $q->where('clinic_id', $clinicId);
-        }])->get();
+        $companyId = auth()->user()->company_id;
+        $today = now()->toDateString();
 
-        $criticalItems = 0;
-        $lowItems = 0;
-        $expiredItems = 0;
-        $today = now();
-
-        foreach ($products as $product) {
-            $totalStock = $product->total_stock;
-            $redLevel = $product->red_alert_level ?? $product->critical_stock_level ?? 5;
-            $yellowLevel = $product->yellow_alert_level ?? $product->min_stock_level ?? 10;
-
-            if ($totalStock <= $redLevel) {
-                $criticalItems++;
-            } elseif ($totalStock <= $yellowLevel) {
-                $lowItems++;
-            }
-
-            // Check batches for expiry
-            foreach ($product->batches as $batch) {
-                if ($batch->track_expiry && $batch->expiry_date && $batch->expiry_date < $today) {
-                    $expiredItems++;
-                    break; // Only count product once as expired for summary if needed, or count all batches?
-                }
-            }
-        }
+        // 🔥 SQL ile tek sorguda hesapla - N+1 problemi çözüldü
+        $stats = \DB::table('products')
+            ->join('stocks', 'products.id', '=', 'stocks.product_id')
+            ->where('stocks.company_id', $companyId)
+            ->where('stocks.is_active', true)
+            ->when($clinicId, fn($q) => $q->where('stocks.clinic_id', $clinicId))
+            ->selectRaw("
+                COUNT(DISTINCT CASE 
+                    WHEN (stocks.has_sub_unit = 1 AND (stocks.current_stock * COALESCE(stocks.sub_unit_multiplier, 1)) + stocks.current_sub_stock <= COALESCE(products.red_alert_level, products.critical_stock_level, 5))
+                    OR (stocks.has_sub_unit = 0 AND stocks.current_stock <= COALESCE(products.red_alert_level, products.critical_stock_level, 5))
+                    THEN products.id 
+                END) as critical_items,
+                COUNT(DISTINCT CASE 
+                    WHEN (stocks.has_sub_unit = 1 AND (stocks.current_stock * COALESCE(stocks.sub_unit_multiplier, 1)) + stocks.current_sub_stock <= COALESCE(products.yellow_alert_level, products.min_stock_level, 10))
+                    OR (stocks.has_sub_unit = 0 AND stocks.current_stock <= COALESCE(products.yellow_alert_level, products.min_stock_level, 10))
+                    THEN products.id 
+                END) as low_items,
+                COUNT(DISTINCT CASE 
+                    WHEN stocks.track_expiry = 1 AND stocks.expiry_date < ? 
+                    THEN products.id 
+                END) as expired_items
+            ", [$today])
+            ->first();
 
         return response()->json([
             'success' => true,
-            'data' => ['count' => $criticalItems + $lowItems]
+            'data' => ['count' => ($stats->critical_items ?? 0) + ($stats->low_items ?? 0)]
         ]);
     }
 
@@ -202,10 +210,12 @@ class StockAlertController extends Controller
 
     public function bulkResolve(Request $request)
     {
+        $this->authorize('bulkResolve', StockAlert::class);
+
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
             'ids.*' => 'integer',
-            'resolved_by' => 'required|string|max:255'
+            'resolution_notes' => 'nullable|string|max:1000'
         ]);
 
         if ($validator->fails()) {
@@ -218,7 +228,8 @@ class StockAlertController extends Controller
         try {
             $count = $this->stockAlertService->bulkResolve(
                 $request->ids,
-                $request->resolved_by
+                auth()->user()->name,
+                $request->resolution_notes ?? null
             );
 
             return response()->json([
@@ -236,6 +247,8 @@ class StockAlertController extends Controller
 
     public function bulkDismiss(Request $request)
     {
+        $this->authorize('bulkDismiss', StockAlert::class);
+
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
             'ids.*' => 'integer'
@@ -266,6 +279,8 @@ class StockAlertController extends Controller
 
     public function bulkDelete(Request $request)
     {
+        $this->authorize('bulkDelete', StockAlert::class);
+
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
             'ids.*' => 'integer'
@@ -296,6 +311,9 @@ class StockAlertController extends Controller
 
     public function dismiss(Request $request, $id)
     {
+        $alert = $this->stockAlertService->getAlertById($id);
+        $this->authorize('dismiss', $alert);
+
         try {
             $result = $this->stockAlertService->dismissAlert($id);
 
@@ -320,6 +338,9 @@ class StockAlertController extends Controller
 
     public function destroy($id)
     {
+        $alert = $this->stockAlertService->getAlertById($id);
+        $this->authorize('delete', $alert);
+
         try {
             $result = $this->stockAlertService->deleteAlert($id);
 

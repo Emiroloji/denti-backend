@@ -14,6 +14,11 @@ const appName = window.document.getElementsByTagName('title')[0]?.innerText || '
 
 const queryClient = new QueryClient();
 
+// 🛡️ 401 Unauthorized handler - otomatik login'e yönlendir
+window.addEventListener('auth:unauthorized', () => {
+    window.location.href = '/login';
+});
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),

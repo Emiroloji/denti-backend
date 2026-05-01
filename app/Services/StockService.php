@@ -311,8 +311,13 @@ class StockService
                 $stats = $baseQuery->join('products', 'stocks.product_id', '=', 'products.id')
                     ->selectRaw("
                         COUNT(DISTINCT stocks.product_id) as total_items,
-                        SUM(CASE WHEN stocks.is_active = 1 AND {$totalUnitsRaw} <= COALESCE(products.yellow_alert_level, products.min_stock_level) THEN 1 ELSE 0 END) as low_stock_items,
-                        SUM(CASE WHEN stocks.is_active = 1 AND {$totalUnitsRaw} <= COALESCE(products.red_alert_level, products.critical_stock_level) THEN 1 ELSE 0 END) as critical_stock_items,
+                        SUM(CASE WHEN stocks.is_active = 1
+                            AND {$totalUnitsRaw} <= COALESCE(products.red_alert_level, products.critical_stock_level)
+                            THEN 1 ELSE 0 END) as critical_stock_items,
+                        SUM(CASE WHEN stocks.is_active = 1
+                            AND {$totalUnitsRaw} <= COALESCE(products.yellow_alert_level, products.min_stock_level)
+                            AND {$totalUnitsRaw} > COALESCE(products.red_alert_level, products.critical_stock_level)
+                            THEN 1 ELSE 0 END) as low_stock_items,
                         SUM(CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 AND stocks.expiry_date <= ? AND stocks.expiry_date > ? THEN 1 ELSE 0 END) as expiring_items,
                         SUM(stocks.purchase_price * stocks.current_stock) as total_value
                     ", [$nearExpiryLimit, $now])->first();

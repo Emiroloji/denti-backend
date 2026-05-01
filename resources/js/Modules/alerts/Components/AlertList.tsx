@@ -21,14 +21,14 @@ import {
   Tooltip,
   Spin
 } from 'antd'
+import { Link } from '@inertiajs/react'
 import { 
   FilterOutlined,
   ReloadOutlined,
   BellOutlined,
   DeleteOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  EyeOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useAlerts, useAlertStats } from '../Hooks/useAlerts'
@@ -83,6 +83,68 @@ export const AlertList: React.FC<AlertListProps> = ({
     return clinics.filter((clinic) => clinic.is_active)
   }, [clinics])
 
+  // 🔥 Table columns - useMemo ile optimize edildi
+  const tableColumns = useMemo(() => [
+    {
+      title: 'Önem',
+      dataIndex: 'severity',
+      width: 100,
+      render: (sev: any) => <AlertSeverityBadge severity={sev} />
+    },
+    {
+      title: 'Ürün / Mesaj',
+      render: (_: any, record: any) => (
+        <Link 
+          href={`/stock?product_id=${record.stock?.product?.id || record.product_id}`}
+          className="alert-product-link"
+          style={{ textDecoration: 'none', display: 'block' }}
+        >
+          <div style={{ fontWeight: 'bold', color: '#1890ff', cursor: 'pointer' }}>
+            {record.title}
+          </div>
+          <div style={{ fontSize: '12px', color: '#666' }}>{record.message}</div>
+        </Link>
+      )
+    },
+    {
+      title: 'Klinik',
+      dataIndex: ['clinic', 'name'],
+      render: (name: any) => <Tag color="blue">{name}</Tag>
+    },
+    {
+      title: 'Tür',
+      dataIndex: 'type',
+      render: (type: AlertType) => <Tag>{alertTypeOptions.find(o => o.value === type)?.label || type}</Tag>
+    },
+    {
+      title: 'Tarih',
+      dataIndex: 'created_at',
+      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm')
+    },
+    {
+      title: 'İşlemler',
+      width: 180,
+      render: (_: any, record: any) => (
+        <Space>
+          <Tooltip title="Ürünü Gör">
+            <Link href={`/stock?product_id=${record.stock?.product?.id || record.product_id}`}>
+              <Button size="small" type="primary" ghost icon={<EyeOutlined />} />
+            </Link>
+          </Tooltip>
+          <Tooltip title="Sil">
+            <Button size="small" danger icon={<DeleteOutlined />} 
+              onClick={() => Modal.confirm({
+                title: 'Uyarıyı Sil',
+                content: 'Bu uyarıyı kalıcı olarak silmek istediğinize emin misiniz?',
+                onOk: () => deleteAlert(record.id)
+              })} 
+            />
+          </Tooltip>
+        </Space>
+      )
+    }
+  ], [deleteAlert])
+
   const handleFilterChange = (key: keyof AlertFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))
     setSelectedAlerts([])
@@ -116,7 +178,7 @@ export const AlertList: React.FC<AlertListProps> = ({
       if (bulkActionType === 'resolve') {
         await bulkResolveAlerts({
           ids: selectedAlerts,
-          data: { resolved_by: currentUser, resolution_notes: values?.resolution_notes }
+          data: { resolution_notes: values?.resolution_notes }
         })
       } else if (bulkActionType === 'dismiss') {
         await bulkDismissAlerts(selectedAlerts)
@@ -275,66 +337,7 @@ export const AlertList: React.FC<AlertListProps> = ({
             selectedRowKeys: selectedAlerts,
             onChange: (keys) => setSelectedAlerts(keys as number[])
           }}
-          columns={[
-            {
-              title: 'Önem',
-              dataIndex: 'severity',
-              width: 100,
-              render: (sev) => <AlertSeverityBadge severity={sev} />
-            },
-            {
-              title: 'Ürün / Mesaj',
-              render: (_, record) => (
-                <div>
-                  <div style={{ fontWeight: 'bold', color: '#1890ff' }}>{record.title}</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>{record.message}</div>
-                </div>
-              )
-            },
-            {
-              title: 'Klinik',
-              dataIndex: ['clinic', 'name'],
-              render: (name) => <Tag color="blue">{name}</Tag>
-            },
-            {
-              title: 'Tür',
-              dataIndex: 'type',
-              render: (type) => <Tag>{alertTypeOptions.find(o => o.value === type)?.label || type}</Tag>
-            },
-            {
-              title: 'Tarih',
-              dataIndex: 'created_at',
-              render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm')
-            },
-            {
-              title: 'İşlemler',
-              width: 150,
-              render: (_, record) => (
-                <Space>
-                  {!record.is_resolved && (
-                    <Tooltip title="Çözümle">
-                      <Button size="small" type="primary" ghost icon={<CheckOutlined />} 
-                        onClick={() => Modal.confirm({
-                          title: 'Uyarıyı Çözümle',
-                          content: 'Bu uyarıyı çözüldü olarak işaretlemek istediğinize emin misiniz?',
-                          onOk: () => resolveAlert({ id: record.id, data: { resolved_by: currentUser } })
-                        })} 
-                      />
-                    </Tooltip>
-                  )}
-                  <Tooltip title="Sil">
-                    <Button size="small" danger icon={<DeleteOutlined />} 
-                      onClick={() => Modal.confirm({
-                        title: 'Uyarıyı Sil',
-                        content: 'Bu uyarıyı kalıcı olarak silmek istediğinize emin misiniz?',
-                        onOk: () => deleteAlert(record.id)
-                      })} 
-                    />
-                  </Tooltip>
-                </Space>
-              )
-            }
-          ]}
+          columns={tableColumns}
         />
       </Card>
 

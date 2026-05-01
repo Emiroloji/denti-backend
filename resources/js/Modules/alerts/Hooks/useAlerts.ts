@@ -30,10 +30,15 @@ export const useAlerts = (filters?: AlertFilters) => {
       }));
     },
     enabled: true,
-    staleTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 60 * 1000, // 1 dakika
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchInterval: 60000, // 60 saniyede bir
+    refetchInterval: (query) => {
+      // 🔥 Kritik uyarı varsa 15s, yoksa 2dk'de bir kontrol et
+      const data = query.state.data?.data as any[] | undefined
+      const hasCritical = data?.some((a: any) => a.severity === 'critical' || a.type === 'critical_stock' || a.type === 'expired')
+      return hasCritical ? 15000 : 120000
+    },
     refetchIntervalInBackground: false,
     retry: 1,
   })
@@ -129,7 +134,6 @@ export const useAlerts = (filters?: AlertFilters) => {
     isCreating: createMutation.isPending,
     isResolving: resolveMutation.isPending,
     isDismissing: dismissMutation.isPending,
-    isDeleting: deleteMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isBulkProcessing: bulkResolveMutation.isPending || bulkDismissMutation.isPending,
     syncAlerts: async (clinicId?: number) => {
