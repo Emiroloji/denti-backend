@@ -318,7 +318,7 @@ export const AlertList: React.FC<AlertListProps> = ({
         </Affix>
       )}
 
-      <Card bodyStyle={{ padding: 0 }}>
+      <Card styles={{ body: { padding: 0 } }}>
         <Table
           dataSource={alerts || []}
           loading={isLoading}

@@ -296,7 +296,7 @@ export const SupplierList: React.FC = () => {
           <Statistic 
             title="Aktif Tedarikçi" 
             value={stats.active}
-            valueStyle={{ color: '#52c41a' }}
+            styles={{ content: { color: '#52c41a' } }}
             prefix={<CheckCircleOutlined />}
           />
         </Card>
@@ -306,7 +306,7 @@ export const SupplierList: React.FC = () => {
           <Statistic 
             title="Pasif Tedarikçi" 
             value={stats.inactive}
-            valueStyle={{ color: '#ff4d4f' }}
+            styles={{ content: { color: '#ff4d4f' } }}
             prefix={<CloseCircleOutlined />}
           />
         </Card>

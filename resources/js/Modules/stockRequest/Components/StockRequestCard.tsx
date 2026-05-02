@@ -78,7 +78,7 @@ export const StockRequestCard: React.FC<StockRequestCardProps> = ({
         borderLeft: `4px solid ${getCardBorderColor(request.status)}`,
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}
-      bodyStyle={{ padding: '16px' }}
+      styles={{ body: { padding: '16px' } }}
     >
       {/* Header */}
       <Row justify="space-between" align="top" style={{ marginBottom: 12 }}>

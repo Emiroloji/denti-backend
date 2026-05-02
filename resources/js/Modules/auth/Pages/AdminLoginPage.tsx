@@ -1,20 +1,9 @@
 // src/modules/auth/Pages/AdminLoginPage.tsx
 
-import React, { useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import React from 'react';
 import { AdminLoginForm } from '../Components/AdminLoginForm';
-import { useAuth } from '@/Modules/auth/Hooks/useAuth';
 
 export const AdminLoginPage: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
-  ;
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.visit('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
   return (
     <div style={{ 
       height: '100vh', 

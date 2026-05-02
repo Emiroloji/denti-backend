@@ -10,7 +10,7 @@ import { UpdateProfileRequest, UpdatePasswordRequest } from '../Types/profile.ty
 const { Title, Text } = Typography;
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateUser } = useAuthStore();
+  const { user } = useAuth();
   const { message } = App.useApp();
   const [infoForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -22,7 +22,7 @@ export const ProfilePage: React.FC = () => {
       setLoading(true);
       const response = await profileApi.updateInfo(values);
       if (response.success) {
-        updateUser(response.data);
+        // Inertia will refetch the auth props on next navigation
         message.success('Profil bilgileriniz başarıyla güncellendi.');
       }
     } catch (error: any) {

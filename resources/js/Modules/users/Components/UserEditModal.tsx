@@ -47,7 +47,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       onCancel={onCancel}
       onOk={() => form.submit()}
       confirmLoading={loading}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

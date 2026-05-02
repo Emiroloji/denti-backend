@@ -9,18 +9,12 @@ import { useAuth } from '../Hooks/useAuth';
 const { Title, Text } = Typography;
 
 export const LoginForm: React.FC = () => {
-  ;
   const { login, verify2fa, loading } = useAuth();
   const [show2faModal, setShow2faModal] = useState(false);
   const [twoFactorForm] = Form.useForm();
 
-  const onFinish = async (values: any) => {
-    const result = await login(values);
-    if (result.requires2fa) {
-      setShow2faModal(true);
-    } else if (result.success) {
-      router.visit('/');
-    }
+  const onFinish = (values: any) => {
+    login(values);
   };
 
   const on2faFinish = async (values: { code: string }) => {
@@ -90,7 +84,7 @@ export const LoginForm: React.FC = () => {
         confirmLoading={loading}
         okText="Doğrula"
         cancelText="İptal"
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ marginBottom: 20 }}>
           <Text>Hesabınızda 2FA aktif. Lütfen uygulamanızdaki 6 haneli kodu girin.</Text>

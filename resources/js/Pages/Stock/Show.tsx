@@ -81,7 +81,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                 ]} />
             </div>
 
-            <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 {/* Header Card */}
                 <Card variant="borderless" className="premium-card">
                     <Row gutter={24} align="middle">

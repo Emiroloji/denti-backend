@@ -9,7 +9,6 @@ import { useAuth } from '../Hooks/useAuth';
 const { Title, Text } = Typography;
 
 export const AdminLoginForm: React.FC = () => {
-  ;
   const { adminLogin, loading } = useAuth();
 
   const onFinish = (values: any) => {

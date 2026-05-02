@@ -69,7 +69,7 @@ export const ClinicHeader: React.FC<ClinicHeaderProps> = ({
                 title="Toplam Klinik"
                 value={totalClinics}
                 prefix={<ShopOutlined />}
-                valueStyle={{ color: '#1890ff' }}
+                styles={{ content: { color: '#1890ff' } }}
               />
             )}
           </Card>
@@ -83,7 +83,7 @@ export const ClinicHeader: React.FC<ClinicHeaderProps> = ({
                 title="Aktif Klinik"
                 value={activeClinics}
                 prefix={<ShopOutlined />}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             )}
           </Card>

@@ -1,20 +1,9 @@
 // src/modules/auth/Pages/LoginPage.tsx
 
-import React, { useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import React from 'react';
 import { LoginForm } from '../Components/LoginForm';
-import { useAuth } from '@/Modules/auth/Hooks/useAuth';
 
 export const LoginPage: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
-  ;
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.visit('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
   return (
     <div style={{ 
       height: '100vh', 

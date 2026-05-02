@@ -128,7 +128,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
         opacity: alert.is_resolved ? 0.7 : 1,
         cursor: onClick ? 'pointer' : 'default'
       }}
-      bodyStyle={{ padding: '16px' }}
+      styles={{ body: { padding: '16px' } }}
       onClick={onClick}
       hoverable={!!onClick}
     >

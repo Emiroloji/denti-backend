@@ -66,7 +66,7 @@ export const CompanyFormModal: React.FC<Props> = ({ open, editingCompany, onCanc
       confirmLoading={submitting}
       width={650}
       okText={isEdit ? "Güncelle" : "Oluştur"}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form 
         form={form} 

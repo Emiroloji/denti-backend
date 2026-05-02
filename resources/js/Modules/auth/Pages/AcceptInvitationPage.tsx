@@ -11,7 +11,6 @@ const { Title, Text } = Typography;
 
 export const AcceptInvitationPage: React.FC = () => {
   const { token } = usePage().props as unknown as { token: string };
-  ;
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
 

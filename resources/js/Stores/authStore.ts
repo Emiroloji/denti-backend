@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User } from '../../modules/auth/Types/auth.types';
+import { User } from '@/Modules/auth/Types/auth.types';
 
 interface AuthState {
   user: User | null;

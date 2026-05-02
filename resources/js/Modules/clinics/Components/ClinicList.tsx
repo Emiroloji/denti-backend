@@ -180,7 +180,7 @@ export const ClinicList: React.FC = () => {
         onCancel={handleDetailCancel}
         footer={null}
         width={1200}
-        destroyOnClose
+        destroyOnHidden
       >
         {viewingClinic && (
           <ClinicDetail 

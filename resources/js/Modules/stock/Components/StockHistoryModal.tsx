@@ -131,7 +131,7 @@ export const StockHistoryModal: React.FC<StockHistoryModalProps> = ({
       onCancel={onClose}
       footer={null}
       width={900}
-      destroyOnClose
+      destroyOnHidden
     >
       {isLoading ? (
         <Skeleton active paragraph={{ rows: 10 }} />
@@ -160,7 +160,7 @@ export const StockHistoryModal: React.FC<StockHistoryModalProps> = ({
                     title="Toplam Çıkış" 
                     value={stats.used} 
                     suffix={stock?.unit}
-                    valueStyle={{ color: '#cf1322' }}
+                    styles={{ content: { color: '#cf1322' } }}
                   />
                 </Card>
               </Col>

@@ -70,7 +70,7 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({
       onOk={() => form.submit()}
       confirmLoading={isProcessing}
       width={1000}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

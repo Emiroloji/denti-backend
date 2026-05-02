@@ -37,7 +37,7 @@ export const UserInviteModal: React.FC<UserInviteModalProps> = ({
       confirmLoading={loading}
       okText="Davetiye Gönder"
       cancelText="İptal"
-      destroyOnClose
+      destroyOnHidden
     >
       <Alert
         message="Bilgilendirme"

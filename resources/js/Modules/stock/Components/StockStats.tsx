@@ -47,7 +47,7 @@ export const StockStats: React.FC<StockStatsProps> = ({ stats }) => {
           <Statistic 
             title="Düşük Seviye" 
             value={stats.low_stock_items}
-            valueStyle={{ color: '#faad14' }}
+            styles={{ content: { color: '#faad14' } }}
             prefix={<WarningOutlined />}
           />
         </Card>

@@ -30,7 +30,7 @@ export const UserCreateModal: React.FC<UserCreateModalProps> = ({
       onCancel={onCancel}
       onOk={() => form.submit()}
       confirmLoading={loading}
-      destroyOnClose
+      destroyOnHidden
       okText="Kullanıcıyı Oluştur"
       cancelText="İptal"
     >

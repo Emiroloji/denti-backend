@@ -97,7 +97,7 @@ export const UserManagementPage: React.FC = () => {
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: record.is_active ? '#1890ff' : '#d9d9d9' }} />
           <div>
             <div style={{ fontWeight: 600 }}>{text}</div>
-            <Text type="secondary" size="small">{record.username || record.email}</Text>
+            <Text type="secondary" style={{ fontSize: '12px' }}>{record.username || record.email}</Text>
           </div>
         </Space>
       ),

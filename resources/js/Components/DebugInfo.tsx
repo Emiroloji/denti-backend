@@ -5,11 +5,12 @@ import { Card, Typography } from 'antd'
 
 const { Text } = Typography
 
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore } from '@/Stores/authStore'
 import { usePermissions } from '../Hooks/usePermissions'
 
 export const DebugInfo: React.FC = () => {
-  const { user, permissions } = useAuth()
+  const user = useAuthStore(state => state.user)
+  const permissions = useAuthStore(state => state.permissions)
   const { isAdmin, isSuperAdmin, isCompanyOwner } = usePermissions()
 
   if (import.meta.env.MODE === 'production') return null;
