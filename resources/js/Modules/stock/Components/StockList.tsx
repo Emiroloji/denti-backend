@@ -46,8 +46,16 @@ export const StockList: React.FC = () => {
   const {
     adjustStock,
     useStock: executeStockUsage,
+    deleteStock,
+    softDeleteStock,
+    hardDeleteStock,
+    reactivateStock,
     isAdjusting,
-    isUsing
+    isUsing,
+    isDeleting,
+    isSoftDeleting,
+    isHardDeleting,
+    isReactivating
   } = useStocks()
 
   const { data: globalStats, isLoading: isStatsLoading } = useStockStats()
@@ -125,10 +133,10 @@ export const StockList: React.FC = () => {
           stocks={activeStocks}
           loading={isLoading}
           onEdit={handleEdit}
-          onDelete={() => {}} 
-          onSoftDelete={() => {}}
-          onHardDelete={() => {}}
-          onReactivate={() => {}}
+          onDelete={deleteStock} 
+          onSoftDelete={softDeleteStock}
+          onHardDelete={hardDeleteStock}
+          onReactivate={reactivateStock}
           onAdjust={handleAdjust}
           onUse={handleUse}
           onViewHistory={handleViewHistory}

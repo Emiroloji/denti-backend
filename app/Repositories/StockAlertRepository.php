@@ -128,4 +128,12 @@ class StockAlertRepository implements StockAlertRepositoryInterface
 
         return $query->count();
     }
+
+    public function deleteActiveAlertsByProduct(int $productId): void
+    {
+        // 🛡️ Ürün bazlı uyarı temizleme - ürünün tüm aktif uyarılarını sil
+        $this->model->where('product_id', $productId)
+                   ->where('is_active', true)
+                   ->delete();
+    }
 }

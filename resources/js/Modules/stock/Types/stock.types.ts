@@ -17,6 +17,19 @@ export interface Product {
   current_stock: number // Alias for compatibility
   status?: 'active' | 'inactive' | 'critical' | 'low' | 'normal'
   batches?: Stock[]
+  
+  // Finansal Bilgiler
+  average_cost?: number
+  last_purchase_price?: number
+  total_stock_value?: number
+  potential_revenue?: number
+  potential_profit?: number
+  profit_margin?: number
+  
+  // Transaction Summary
+  total_in?: number
+  total_out?: number
+  
   created_at?: string
   updated_at?: string
 }
@@ -27,6 +40,16 @@ export interface Stock {
   product?: Product
   name: string // Provided by backend Resource for compatibility
   code?: string // Provided by backend Resource for compatibility
+  
+  // Product computed fields (when used as product list)
+  category?: string
+  sku?: string
+  unit?: string
+  min_stock_level?: number
+  critical_stock_level?: number
+  yellow_alert_level?: number
+  red_alert_level?: number
+  total_stock?: number
   
   // Batch specific
   supplier_id: number
@@ -65,6 +88,10 @@ export interface Stock {
   is_near_expiry?: boolean
   days_to_expiry?: number
   stock_status?: string
+  
+  // Transaction Summary
+  total_in?: number
+  total_out?: number
   
   created_at?: string
   updated_at?: string

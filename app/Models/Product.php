@@ -79,4 +79,68 @@ class Product extends Model
         if ($total <= $yellowLevel) return \App\Enums\StockStatus::LOW_STOCK->value;
         return 'normal';
     }
+
+    // 🏦 Finansal Hesaplamalar
+    public function getTotalStockValueAttribute()
+    {
+        return $this->batches->sum(function($batch) {
+            $totalUnits = $batch->has_sub_unit 
+                ? ($batch->current_stock * ($batch->sub_unit_multiplier ?? 1)) + $batch->current_sub_stock
+                : $batch->current_stock;
+            return $totalUnits * ($batch->purchase_price ?? 0);
+        });
+    }
+
+    public function getAverageCostAttribute()
+    {
+        $totalUnits = $this->total_stock;
+        if ($totalUnits <= 0) return 0;
+        
+        return $this->total_stock_value / $totalUnits;
+    }
+
+    public function getPotentialRevenueAttribute()
+    {
+        return $this->total_stock * ($this->sale_price ?? 0);
+    }
+
+    public function getPotentialProfitAttribute()
+    {
+        $totalCost = $this->total_stock_value;
+        $totalRevenue = $this->potential_revenue;
+        
+        return $totalRevenue - $totalCost;
+    }
+
+    public function getProfitMarginAttribute()
+    {
+        $totalRevenue = $this->potential_revenue;
+        if ($totalRevenue <= 0) return 0;
+        
+        return ($this->potential_profit / $totalRevenue) * 100;
+    }
+
+    public function getLastPurchasePriceAttribute()
+    {
+        $lastBatch = $this->batches()
+            ->where('current_stock', '>', 0)
+            ->orderByDesc('purchase_date')
+            ->first();
+        
+        return $lastBatch ? $lastBatch->purchase_price : 0;
+    }
+
+    public function getTotalInAttribute()
+    {
+        return $this->stockTransactions()
+            ->whereIn('type', ['in', 'adjustment_in', 'return'])
+            ->sum('quantity');
+    }
+
+    public function getTotalOutAttribute()
+    {
+        return $this->stockTransactions()
+            ->whereIn('type', ['out', 'usage', 'adjustment_out', 'waste'])
+            ->sum('quantity');
+    }
 }

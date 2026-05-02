@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { message } from 'antd'
 import { stockApi } from '../Services/stockApi'
-import { STOCK_QUERY_KEYS } from '../Constants/queryKeys'
+import { STOCK_QUERY_KEYS } from '../constants/queryKeys'
 import { 
   UpdateStockRequest, 
   StockAdjustmentRequest,
@@ -336,6 +336,29 @@ export const useExpiringItems = (days?: number) => {
   })
 }
 
+export const useProductTransactions = (productId: number) => {
+  return useQuery({
+    queryKey: [STOCK_QUERY_KEYS.PRODUCTS, productId, STOCK_QUERY_KEYS.TRANSACTIONS],
+    queryFn: () => stockApi.getProductTransactions(productId),
+    select: (response: any) => response.data?.data || response.data,
+    enabled: !!productId
+  })
+}
+
+export const useStockTransactions = (stockId: number, filters: any = {}) => {
+  const queryParams = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) queryParams.append(key, String(value))
+  })
+
+  return useQuery({
+    queryKey: [STOCK_QUERY_KEYS.STOCKS, stockId, STOCK_QUERY_KEYS.TRANSACTIONS, filters],
+    queryFn: () => stockApi.getStockTransactions(stockId, queryParams.toString()),
+    select: (response: any) => response.data?.data || response.data,
+    enabled: !!stockId
+  })
+}
+
 // İstatistikler için hook
 export const useStockStats = () => {
   return useQuery({
@@ -343,16 +366,5 @@ export const useStockStats = () => {
     queryFn: stockApi.getStats,
     select: (response: any) => response.data?.data || response.data,
     staleTime: STALE_TIME,
-  })
-}
-
-// Stok hareketleri için hook
-export const useStockTransactions = (id: number) => {
-  return useQuery({
-    queryKey: [STOCK_QUERY_KEYS.STOCKS, id, STOCK_QUERY_KEYS.TRANSACTIONS],
-    queryFn: () => stockApi.getProductTransactions(id),
-    select: (response: any) => response.data?.data || response.data,
-    enabled: !!id,
-    staleTime: 60000,
   })
 }

@@ -311,14 +311,14 @@ class StockService
                 $stats = $baseQuery->join('products', 'stocks.product_id', '=', 'products.id')
                     ->selectRaw("
                         COUNT(DISTINCT stocks.product_id) as total_items,
-                        SUM(CASE WHEN stocks.is_active = 1
+                        COUNT(DISTINCT CASE WHEN stocks.is_active = 1
                             AND {$totalUnitsRaw} <= COALESCE(products.red_alert_level, products.critical_stock_level)
-                            THEN 1 ELSE 0 END) as critical_stock_items,
-                        SUM(CASE WHEN stocks.is_active = 1
+                            THEN stocks.product_id END) as critical_stock_items,
+                        COUNT(DISTINCT CASE WHEN stocks.is_active = 1
                             AND {$totalUnitsRaw} <= COALESCE(products.yellow_alert_level, products.min_stock_level)
                             AND {$totalUnitsRaw} > COALESCE(products.red_alert_level, products.critical_stock_level)
-                            THEN 1 ELSE 0 END) as low_stock_items,
-                        SUM(CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 AND stocks.expiry_date <= ? AND stocks.expiry_date > ? THEN 1 ELSE 0 END) as expiring_items,
+                            THEN stocks.product_id END) as low_stock_items,
+                        COUNT(DISTINCT CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 AND stocks.expiry_date <= ? AND stocks.expiry_date > ? THEN stocks.product_id END) as expiring_items,
                         SUM(stocks.purchase_price * stocks.current_stock) as total_value
                     ", [$nearExpiryLimit, $now])->first();
 
@@ -351,9 +351,32 @@ class StockService
         return $this->stockRepository->getExpiringItems($days, $clinicId);
     }
 
-    public function getStockTransactions(int $stockId): Collection
+    public function getStockTransactions(int $stockId, array $filters = []): mixed
     {
-        return $this->stockRepository->getTransactions($stockId);
+        $query = \App\Models\StockTransaction::where('stock_id', $stockId)
+            ->with(['user', 'clinic'])
+            ->orderByDesc('transaction_date');
+
+        // Type filter
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        // Date range filter
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('transaction_date', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('transaction_date', '<=', $filters['date_to']);
+        }
+
+        // Pagination
+        $perPage = $filters['per_page'] ?? 50;
+        if ($perPage && $perPage > 0) {
+            return $query->paginate($perPage);
+        }
+
+        return $query->get();
     }
 
     protected function createTransaction(array $data): void

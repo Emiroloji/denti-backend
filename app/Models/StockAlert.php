@@ -17,7 +17,7 @@ class StockAlert extends Model
     use Tenantable, SoftDeletes;
 
     protected $fillable = [
-        'stock_id', 'clinic_id', 'type', 'title', 'message',
+        'product_id', 'stock_id', 'clinic_id', 'type', 'title', 'message',
         'current_stock_level', 'threshold_level', 'expiry_date',
         'is_active', 'is_resolved', 'resolved_at', 'resolved_by',
         'company_id'
@@ -47,6 +47,11 @@ class StockAlert extends Model
             'low_stock', 'near_expiry' => 'high',
             default => 'medium'
         };
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function stock(): BelongsTo

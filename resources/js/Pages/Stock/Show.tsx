@@ -25,7 +25,7 @@ import {
 } from '@ant-design/icons';
 import { Product, Stock as StockBatch } from '@/Modules/stock/Types/stock.types';
 import { StockTable } from '@/Modules/stock/Components/StockTable';
-import { useProductDetail, useStocks, useStockTransactions } from '@/Modules/stock/Hooks/useStocks';
+import { useProductDetail, useStocks, useProductTransactions } from '@/Modules/stock/Hooks/useStocks';
 import { BatchForm } from '@/Modules/stock/Components/BatchForm';
 import { StockModals } from '@/Modules/stock/Components/StockModals';
 import { TransactionHistoryTable } from '@/Modules/stock/Components/TransactionHistoryTable';
@@ -41,7 +41,7 @@ interface Props {
 
 const ProductShow = ({ product: initialProduct }: Props) => {
     const { product, isLoading, addBatch, isAddingBatch } = useProductDetail(initialProduct.id);
-    const { transactions, isLoading: isHistoryLoading } = useStockTransactions(initialProduct.id);
+    const { data: transactions, isLoading: isHistoryLoading } = useProductTransactions(initialProduct.id);
     const { adjustStock, useStock: executeStockUsage, isAdjusting, isUsing } = useStocks();
     
     const [isAddBatchModalVisible, setIsAddBatchModalVisible] = useState(false);
@@ -254,34 +254,26 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                                                 <Col span={8}>
                                                     <Statistic 
                                                         title="Ağırlıklı Ortalama Alış Fiyatı" 
-                                                        value={(() => {
-                                                            const validBatches = (data.batches || []).filter(b => b.current_stock > 0);
-                                                            if (validBatches.length === 0) return 0;
-                                                            const totalValue = validBatches.reduce((sum, b) => sum + (Number(b.purchase_price) * b.current_stock), 0);
-                                                            const totalQty = validBatches.reduce((sum, b) => sum + b.current_stock, 0);
-                                                            return totalQty > 0 ? (totalValue / totalQty).toFixed(2) : 0;
-                                                        })()} 
-                                                        suffix={data.batches?.[0]?.currency || 'TRY'} 
+                                                        value={data.average_cost || 0} 
+                                                        suffix={data.batches?.[0]?.currency || 'TRY'}
+                                                        precision={2}
                                                     />
                                                 </Col>
                                                 <Col span={8}>
                                                     <Statistic 
                                                         title="Mevcut Stok Değeri" 
-                                                        value={(data.batches || []).reduce((sum, b) => sum + (Number(b.purchase_price) * b.current_stock), 0).toFixed(2) || 0} 
+                                                        value={data.total_stock_value || 0}
                                                         suffix={data.batches?.[0]?.currency || 'TRY'}
+                                                        precision={2}
                                                         styles={{ content: { color: '#52c41a' } }}
                                                     />
                                                 </Col>
                                                 <Col span={8}>
                                                     <Statistic 
                                                         title="Son Alış Fiyatı" 
-                                                        value={(() => {
-                                                            if (!data.batches || data.batches.length === 0) return 0;
-                                                            // Sort by purchase_date descending to find the latest
-                                                            const sorted = [...data.batches].sort((a, b) => dayjs(b.purchase_date).unix() - dayjs(a.purchase_date).unix());
-                                                            return sorted[0]?.purchase_price || 0;
-                                                        })()} 
-                                                        suffix={data.batches?.[0]?.currency || 'TRY'} 
+                                                        value={data.last_purchase_price || 0}
+                                                        suffix={data.batches?.[0]?.currency || 'TRY'}
+                                                        precision={2}
                                                     />
                                                 </Col>
                                             </Row>

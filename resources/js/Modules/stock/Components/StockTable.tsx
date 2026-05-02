@@ -1,7 +1,7 @@
 // src/modules/stock/Components/StockTable.tsx
 
-import React from 'react'
-import { Table, Tag, Tooltip, Space, Button, Dropdown, Modal, Typography, Avatar, Progress, Badge } from 'antd'
+import React, { useState, useMemo } from 'react'
+import { Table, Tag, Tooltip, Space, Button, Dropdown, Modal, Typography, Avatar, Progress, Badge, Switch } from 'antd'
 
 import { router } from '@inertiajs/react'
 
@@ -59,11 +59,27 @@ export const StockTable: React.FC<StockTableProps> = ({
     deleteStockId,
     setDeleteStockId,
     handleDeleteConfirm,
+    handleAdvancedDelete,
     handleStandardDelete,
     handleSoftDeleteAction,
     handleReactivateAction,
     handleHardDeleteAction
   } = useStockTableLogic({ onDelete, onSoftDelete, onHardDelete, onReactivate })
+
+  // 0 stoklu batch'leri gizleme state'i
+  const [showEmptyBatches, setShowEmptyBatches] = useState(false)
+
+  // Batch'leri filtrele (0 stoklu olmayanları göster)
+  const filteredStocks = useMemo(() => {
+    if (!isBatchMode) return stocks
+    if (showEmptyBatches) return stocks
+    return stocks.filter(stock => (stock.current_stock || 0) > 0)
+  }, [stocks, isBatchMode, showEmptyBatches])
+
+  const emptyBatchCount = useMemo(() => {
+    if (!isBatchMode) return 0
+    return stocks.filter(s => (s.current_stock || 0) === 0).length
+  }, [stocks, isBatchMode])
 
   const columns: ColumnsType<Stock> = [
     {
@@ -223,16 +239,16 @@ export const StockTable: React.FC<StockTableProps> = ({
           )}
           
           <Dropdown 
-            menu={{ 
+            menu={{
               items: [
                 { key: 'edit', label: 'Düzenle', icon: <EditOutlined />, onClick: () => onEdit(record) },
                 { key: 'use', label: 'Stok Kullan', icon: <MinusOutlined />, onClick: () => onUse(record) },
-                { key: 'history', label: 'Geçmiş', icon: <HistoryOutlined />, onClick: () => onViewHistory(record) },
-                { key: 'adjust', label: 'Düzeltme Yap', icon: <PlusOutlined />, onClick: () => onAdjust(record) },
+                { type: 'divider' },
+                { key: 'advanced', label: 'Gelişmiş İşlemler', icon: <ExclamationCircleOutlined />, onClick: () => handleAdvancedDelete(record) },
                 { type: 'divider' },
                 { key: 'delete', label: 'Sil', icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteConfirm(record.id) }
-              ] 
-            }} 
+              ]
+            }}
             trigger={['click']}
           >
             <Button type="text" icon={<MoreOutlined />} shape="circle" />
@@ -244,10 +260,24 @@ export const StockTable: React.FC<StockTableProps> = ({
 
   return (
     <>
+    {/* Boş batch'leri göster/gizle switch'i (sadece batch mode'da) */}
+    {isBatchMode && emptyBatchCount > 0 && (
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Text type="secondary">Boş partileri göster:</Text>
+        <Switch
+          checked={showEmptyBatches}
+          onChange={setShowEmptyBatches}
+          size="small"
+        />
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          ({emptyBatchCount} tane boş parti gizlendi)
+        </Text>
+      </div>
+    )}
     <Table
       columns={columns}
       scroll={{ x: 1000 }} // Width reduced from 1800 to 1000 to prevent extreme sliding
-      dataSource={stocks}
+      dataSource={filteredStocks}
       rowKey="id"
       loading={loading}
       pagination={{

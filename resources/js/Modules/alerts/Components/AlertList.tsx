@@ -21,12 +21,14 @@ import {
   Tooltip,
   Spin
 } from 'antd'
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { 
   FilterOutlined,
   ReloadOutlined,
   BellOutlined,
   DeleteOutlined,
+  CheckOutlined,
+  CloseOutlined,
   ExclamationCircleOutlined,
   EyeOutlined
 } from '@ant-design/icons'
@@ -95,7 +97,7 @@ export const AlertList: React.FC<AlertListProps> = ({
       title: 'Ürün / Mesaj',
       render: (_: any, record: any) => (
         <Link 
-          href={`/stock?product_id=${record.stock?.product?.id || record.product_id}`}
+          href={`/stock?product_id=${record.product?.id || record.stock?.product?.id || record.product_id}`}
           className="alert-product-link"
           style={{ textDecoration: 'none', display: 'block' }}
         >
@@ -123,24 +125,13 @@ export const AlertList: React.FC<AlertListProps> = ({
     },
     {
       title: 'İşlemler',
-      width: 180,
+      width: 100,
       render: (_: any, record: any) => (
-        <Space>
-          <Tooltip title="Ürünü Gör">
-            <Link href={`/stock?product_id=${record.stock?.product?.id || record.product_id}`}>
-              <Button size="small" type="primary" ghost icon={<EyeOutlined />} />
-            </Link>
-          </Tooltip>
-          <Tooltip title="Sil">
-            <Button size="small" danger icon={<DeleteOutlined />} 
-              onClick={() => Modal.confirm({
-                title: 'Uyarıyı Sil',
-                content: 'Bu uyarıyı kalıcı olarak silmek istediğinize emin misiniz?',
-                onOk: () => deleteAlert(record.id)
-              })} 
-            />
-          </Tooltip>
-        </Space>
+        <Tooltip title="Ürünü Gör">
+          <Link href={`/stock?product_id=${record.product?.id || record.stock?.product?.id || record.product_id}`}>
+            <Button size="small" type="primary" ghost icon={<EyeOutlined />} />
+          </Link>
+        </Tooltip>
       )
     }
   ], [deleteAlert])
@@ -167,7 +158,7 @@ export const AlertList: React.FC<AlertListProps> = ({
     setSelectedAlerts([])
   }
 
-  const handleBulkAction = (action: 'resolve' | 'dismiss' | 'delete') => {
+  const handleBulkAction = (action: 'resolve' | 'dismiss') => {
     if (selectedAlerts.length === 0) return
     setBulkActionType(action)
     setBulkActionModalVisible(true)
@@ -320,7 +311,6 @@ export const AlertList: React.FC<AlertListProps> = ({
                 <Space>
                   <Button size="small" icon={<CheckOutlined />} onClick={() => handleBulkAction('resolve')} loading={isBulkProcessing}>Toplu Çözümle</Button>
                   <Button size="small" icon={<CloseOutlined />} onClick={() => handleBulkAction('dismiss')} loading={isBulkProcessing}>Toplu Yok Say</Button>
-                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleBulkAction('delete')} loading={isBulkProcessing}>Toplu Sil</Button>
                 </Space>
               </Col>
             </Row>
@@ -338,6 +328,15 @@ export const AlertList: React.FC<AlertListProps> = ({
             onChange: (keys) => setSelectedAlerts(keys as number[])
           }}
           columns={tableColumns}
+          onRow={(record) => ({
+            onClick: () => {
+              const productId = record.product?.id || record.stock?.product?.id || record.product_id
+              if (productId) {
+                router.visit(`/stock/products/${productId}`)
+              }
+            },
+            style: { cursor: 'pointer' }
+          })}
         />
       </Card>
 

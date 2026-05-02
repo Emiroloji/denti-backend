@@ -141,35 +141,21 @@ class StockAlertController extends Controller
 
         $clinicId = $request->query('clinic_id');
         $companyId = auth()->user()->company_id;
-        $today = now()->toDateString();
 
-        // 🔥 SQL ile tek sorguda hesapla - N+1 problemi çözüldü
-        $stats = \DB::table('products')
-            ->join('stocks', 'products.id', '=', 'stocks.product_id')
-            ->where('stocks.company_id', $companyId)
-            ->where('stocks.is_active', true)
-            ->when($clinicId, fn($q) => $q->where('stocks.clinic_id', $clinicId))
-            ->selectRaw("
-                COUNT(DISTINCT CASE 
-                    WHEN (stocks.has_sub_unit = 1 AND (stocks.current_stock * COALESCE(stocks.sub_unit_multiplier, 1)) + stocks.current_sub_stock <= COALESCE(products.red_alert_level, products.critical_stock_level, 5))
-                    OR (stocks.has_sub_unit = 0 AND stocks.current_stock <= COALESCE(products.red_alert_level, products.critical_stock_level, 5))
-                    THEN products.id 
-                END) as critical_items,
-                COUNT(DISTINCT CASE 
-                    WHEN (stocks.has_sub_unit = 1 AND (stocks.current_stock * COALESCE(stocks.sub_unit_multiplier, 1)) + stocks.current_sub_stock <= COALESCE(products.yellow_alert_level, products.min_stock_level, 10))
-                    OR (stocks.has_sub_unit = 0 AND stocks.current_stock <= COALESCE(products.yellow_alert_level, products.min_stock_level, 10))
-                    THEN products.id 
-                END) as low_items,
-                COUNT(DISTINCT CASE 
-                    WHEN stocks.track_expiry = 1 AND stocks.expiry_date < ? 
-                    THEN products.id 
-                END) as expired_items
-            ", [$today])
-            ->first();
+        // �️ Ürün bazlı uyarı sayısı - her ürün için sadece 1 uyarı sayılır
+        $query = \App\Models\StockAlert::where('company_id', $companyId)
+            ->where('is_active', true)
+            ->where('is_resolved', false);
+
+        if ($clinicId) {
+            $query->where('clinic_id', $clinicId);
+        }
+
+        $count = $query->count();
 
         return response()->json([
             'success' => true,
-            'data' => ['count' => ($stats->critical_items ?? 0) + ($stats->low_items ?? 0)]
+            'data' => ['count' => $count]
         ]);
     }
 

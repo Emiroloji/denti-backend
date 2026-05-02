@@ -20,6 +20,7 @@ interface StockAlertRepositoryInterface
     public function getAlerts(array $filters = []): Collection;
     public function resolveActiveAlerts(int $stockId): void;
     public function deleteActiveAlerts(int $stockId): void;
+    public function deleteActiveAlertsByProduct(int $productId): void;
     public function countActiveAlerts(int $clinicId = null): int;
     public function countAlertsByType(string $type, int $clinicId = null): int;
 }

@@ -365,4 +365,27 @@ class StockController extends Controller
             return $this->error(__('messages.server_error'), 500);
         }
     }
+
+    /**
+     * Get stock transaction history
+     */
+    public function getTransactions(int $id, Request $request): JsonResponse
+    {
+        try {
+            $stock = $this->stockService->getStockById($id);
+            if (!$stock) {
+                return $this->error('Stok bulunamadı', 404);
+            }
+
+            $this->authorize('view', $stock);
+
+            $filters = $request->only(['type', 'date_from', 'date_to', 'per_page']);
+            $transactions = $this->stockService->getStockTransactions($id, $filters);
+
+            return $this->success($transactions, 'İşlem geçmişi başarıyla getirildi');
+        } catch (\Exception $e) {
+            Log::error('Stock Transactions Error: ' . $e->getMessage(), ['id' => $id, 'user_id' => auth()->id()]);
+            return $this->error(__('messages.server_error'), 500);
+        }
+    }
 }

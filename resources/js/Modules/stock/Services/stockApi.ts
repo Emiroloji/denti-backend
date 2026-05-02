@@ -69,6 +69,9 @@ export const stockApi = {
   getTransactions: (id: number): Promise<ApiResponse<any[]>> =>
     api.get(`/stocks/${id}/transactions`),
 
+  getStockTransactions: (id: number, params: string = ''): Promise<ApiResponse<any>> =>
+    api.get(`/stocks/${id}/transactions${params ? '?' + params : ''}`),
+
   // Stock Levels
   getLowStockItems: (): Promise<ApiResponse<Stock[]>> => 
     api.get('/stocks/low-level'),
@@ -120,4 +123,7 @@ export const stockApi = {
 
   getProductTransactions: (id: number): Promise<ApiResponse<any[]>> =>
     api.get(`/products/${id}/transactions`),
+
+  reverseTransaction: (id: number): Promise<ApiResponse<any>> =>
+    api.post(`/transactions/${id}/reverse`),
 }

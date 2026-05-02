@@ -24,12 +24,12 @@ class StockAlertService
         $alerts = $this->calculateAlertsForStock($stock);
         
         if (empty($alerts)) {
-            $this->forceDeleteAlertsByStock($stock->id);
+            $this->forceDeleteAlertsByProduct($stock->product_id);
             return;
         }
 
-        // Mevcut alarmları tamamen temizle ve yenilerini ekle
-        $this->forceDeleteAlertsByStock($stock->id);
+        // 🛡️ Ürün bazlı uyarı - önce ürünün mevcut uyarılarını temizle
+        $this->forceDeleteAlertsByProduct($stock->product_id);
 
         foreach ($alerts as $alertData) {
             $this->createAlert($stock, $alertData);
@@ -89,33 +89,57 @@ class StockAlertService
             ];
         }
 
-        // Son kullanma tarihi kontrolü
-        if ($stock->track_expiry && $stock->expiry_date) {
-            $daysToExpiry = now()->diffInDays($stock->expiry_date, false);
-            $redDays = $stock->expiry_red_days ?? 10;
-            $yellowDays = $stock->expiry_yellow_days ?? 30;
+        // 🛡️ ÜRÜN BAZLI SON KULLANMA TARİHİ KONTROLÜ
+        // Tüm aktif batch'leri kontrol et, en kritik durumu tek uyarı olarak üret
+        $allBatches = $product->batches()->where('is_active', true)->where('track_expiry', true)->whereNotNull('expiry_date')->get();
+        
+        if ($allBatches->isNotEmpty()) {
+            $today = now();
+            $mostUrgentBatch = null;
+            $mostUrgentDays = PHP_INT_MAX;
+            $hasExpired = false;
 
-            if ($daysToExpiry < 0) {
+            foreach ($allBatches as $batch) {
+                $daysToExpiry = $today->diffInDays($batch->expiry_date, false);
+                
+                if ($daysToExpiry < 0) {
+                    $hasExpired = true;
+                    $mostUrgentBatch = $batch;
+                    break; // En kritik durum, hemen çık
+                }
+                
+                if ($daysToExpiry < $mostUrgentDays) {
+                    $mostUrgentDays = $daysToExpiry;
+                    $mostUrgentBatch = $batch;
+                }
+            }
+
+            if ($hasExpired && $mostUrgentBatch) {
                 $alerts[] = [
                     'type' => 'expired',
                     'title' => 'Süresi Geçen Ürün',
-                    'message' => "{$product->name} ürününün son kullanma tarihi geçmiştir! (Parti ID: #{$stock->id})",
-                    'expiry_date' => $stock->expiry_date
+                    'message' => "{$product->name} ürününün son kullanma tarihi geçmiştir! (Parti: #{$mostUrgentBatch->id})",
+                    'expiry_date' => $mostUrgentBatch->expiry_date
                 ];
-            } elseif ($daysToExpiry <= $redDays) {
-                $alerts[] = [
-                    'type' => 'critical_expiry',
-                    'title' => 'Kritik Son Kullanma Tarihi',
-                    'message' => "{$product->name} ürününün son kullanma tarihine çok az kaldı! Kalan: {$daysToExpiry} gün",
-                    'expiry_date' => $stock->expiry_date
-                ];
-            } elseif ($daysToExpiry <= $yellowDays) {
-                $alerts[] = [
-                    'type' => 'near_expiry',
-                    'title' => 'Son Kullanma Tarihi Yaklaşıyor',
-                    'message' => "{$product->name} ürününün son kullanma tarihi yaklaşıyor. Kalan: {$daysToExpiry} gün",
-                    'expiry_date' => $stock->expiry_date
-                ];
+            } elseif ($mostUrgentBatch) {
+                $redDays = $mostUrgentBatch->expiry_red_days ?? 10;
+                $yellowDays = $mostUrgentBatch->expiry_yellow_days ?? 30;
+
+                if ($mostUrgentDays <= $redDays) {
+                    $alerts[] = [
+                        'type' => 'critical_expiry',
+                        'title' => 'Kritik Son Kullanma Tarihi',
+                        'message' => "{$product->name} ürününün son kullanma tarihine çok az kaldı! Kalan: {$mostUrgentDays} gün (Parti: #{$mostUrgentBatch->id})",
+                        'expiry_date' => $mostUrgentBatch->expiry_date
+                    ];
+                } elseif ($mostUrgentDays <= $yellowDays) {
+                    $alerts[] = [
+                        'type' => 'near_expiry',
+                        'title' => 'Son Kullanma Tarihi Yaklaşıyor',
+                        'message' => "{$product->name} ürününün son kullanma tarihi yaklaşıyor. Kalan: {$mostUrgentDays} gün (Parti: #{$mostUrgentBatch->id})",
+                        'expiry_date' => $mostUrgentBatch->expiry_date
+                    ];
+                }
             }
         }
 
@@ -124,7 +148,9 @@ class StockAlertService
 
     protected function createAlert(Stock $stock, array $alertData): StockAlert
     {
+        // 🛡️ Ürün bazlı uyarı - her ürün için sadece 1 uyarı
         $alertData = array_merge($alertData, [
+            'product_id' => $stock->product_id,
             'stock_id' => $stock->id,
             'clinic_id' => $stock->clinic_id,
             'is_active' => true,
@@ -147,6 +173,12 @@ class StockAlertService
     public function forceDeleteAlertsByStock(int $stockId): void
     {
         $this->stockAlertRepository->deleteActiveAlerts($stockId);
+    }
+
+    public function forceDeleteAlertsByProduct(int $productId): void
+    {
+        // 🛡️ Ürün bazlı uyarı temizleme - ürünün tüm uyarılarını sil
+        $this->stockAlertRepository->deleteActiveAlertsByProduct($productId);
     }
 
     public function sendDigestNotification(int $companyId, array $items): void

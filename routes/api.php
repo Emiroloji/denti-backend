@@ -44,6 +44,10 @@ Route::middleware(['auth:sanctum', '2fa.verified'])->group(function () {
     Route::get('/roles/permissions', [RoleController::class, 'permissions']);
     Route::apiResource('roles', RoleController::class);
 
+    // Stock Transactions
+    Route::get('/stocks/{id}/transactions', [\App\Http\Controllers\Api\StockController::class, 'getTransactions']);
+    Route::post('/stocks/{id}/adjust', [\App\Http\Controllers\Api\StockController::class, 'adjustStock']);
+
     // Categories
     Route::prefix('categories')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\CategoryController::class, 'index']);

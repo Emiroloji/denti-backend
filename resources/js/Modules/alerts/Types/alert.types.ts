@@ -46,6 +46,8 @@ export interface Alert {
     | 'expiry_warning'      // Son kullanma uyarısı
     | 'expiry_critical'     // Son kullanma kritik
     | 'expired'             // Süresi geçmiş
+    | 'near_expiry'         // Son kullanma yaklaşıyor
+    | 'critical_expiry'     // Son kullanma kritik yaklaşıyor
     | 'stock_request'       // Stok talebi
     | 'stock_transfer'      // Stok transferi
     | 'system'              // Sistem uyarısı
