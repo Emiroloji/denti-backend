@@ -32,14 +32,16 @@ class AuthController extends Controller
             return $this->error("Çok fazla giriş denemesi. {$seconds} saniye sonra tekrar deneyin.", 429);
         }
 
+        $clinicCode = $request->input('clinic_code') ?? $request->input('company_code');
+
         // 1. Şirketi bul
-        if (!$request->company_code) {
+        if (empty($clinicCode)) {
             RateLimiter::hit($throttleKey, 60);
             return $this->error('Şirket kodu gereklidir.', 422);
         }
 
         // Şirket koduna bakıyoruz (case-insensitive)
-        $company = Company::whereRaw('LOWER(code) = ?', [strtolower($request->company_code)])->first();
+        $company = Company::whereRaw('LOWER(code) = ?', [strtolower($clinicCode)])->first();
         
         if (!$company) {
             RateLimiter::hit($throttleKey, 60);

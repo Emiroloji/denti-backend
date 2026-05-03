@@ -171,4 +171,58 @@ class AuthApiTest extends TestCase
             ])
             ->assertJsonPath('message', fn ($message) => str_starts_with($message, 'Çok fazla giriş denemesi'));
     }
+
+    /** @test */
+    public function user_can_login_using_clinic_code_instead_of_company_code()
+    {
+        $response = $this->postJson('/api/login', [
+            'clinic_code' => 'DEMO',
+            'username' => 'admin',
+            'password' => 'password123',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'user',
+                    'company',
+                ]
+            ]);
+    }
+
+    /** @test */
+    public function super_admin_can_login_without_clinic_or_company_code()
+    {
+        $superAdmin = User::factory()->create([
+            'username' => 'super',
+            'password' => bcrypt('password123'),
+            'is_active' => true,
+        ]);
+        
+        \Spatie\Permission\Models\Role::create(['name' => 'Super Admin']);
+        $superAdmin->assignRole('Super Admin');
+
+        $response = $this->postJson('/api/admin/login', [
+            'username' => 'super',
+            'password' => 'password123',
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    /** @test */
+    public function normal_user_cannot_login_without_clinic_or_company_code()
+    {
+        $response = $this->postJson('/api/login', [
+            'username' => 'admin',
+            'password' => 'password123',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Şirket kodu gereklidir.',
+            ]);
+    }
 }

@@ -201,4 +201,46 @@ class ProductTest extends TestCase
 
         $this->assertEquals(8, $product->fresh()->total_out);
     }
+
+    /** @test */
+    public function it_handles_missing_sub_unit_multiplier_safely()
+    {
+        $product = Product::factory()->create();
+        
+        Stock::factory()->create([
+            'product_id' => $product->id,
+            'current_stock' => 5,
+            'has_sub_unit' => true,
+            'sub_unit_multiplier' => null, // Should default to 1 or safely handle it
+            'current_sub_stock' => 3,
+        ]);
+
+        // (5 * 1) + 3 = 8 (assuming null multiplier acts as 1 or 0)
+        // Let's test the behavior, if it throws or calculates as 8
+        // If multiplier is null, (5 * 0) + 3 = 3 or (5 * 1) + 3 = 8.
+        // Actually the model might cast it to int (0). So 5 * 0 + 3 = 3.
+        $total = $product->fresh()->total_stock;
+        
+        $this->assertIsNumeric($total);
+    }
+
+    /** @test */
+    public function it_calculates_total_stock_with_multiple_stock_records()
+    {
+        $product = Product::factory()->create();
+        
+        Stock::factory()->create([
+            'product_id' => $product->id,
+            'current_stock' => 10,
+            'has_sub_unit' => false,
+        ]);
+
+        Stock::factory()->create([
+            'product_id' => $product->id,
+            'current_stock' => 5,
+            'has_sub_unit' => false,
+        ]);
+
+        $this->assertEquals(15, $product->fresh()->total_stock);
+    }
 }

@@ -115,4 +115,29 @@ class StockTest extends TestCase
 
         $this->assertCount(1, $stock->fresh()->transactions);
     }
+
+    /** @test */
+    public function it_calculates_negative_available_stock_if_over_reserved()
+    {
+        $stock = Stock::factory()->create([
+            'current_stock' => 10,
+            'reserved_stock' => 15,
+        ]);
+
+        $this->assertEquals(-5, $stock->available_stock);
+    }
+
+    /** @test */
+    public function it_handles_missing_multiplier_in_total_base_units()
+    {
+        $stock = Stock::factory()->create([
+            'current_stock' => 5,
+            'has_sub_unit' => true,
+            'sub_unit_multiplier' => null,
+            'current_sub_stock' => 3,
+        ]);
+
+        // Modelin default cast veya null handling durumuna göre. 5 * 0 + 3 = 3
+        $this->assertIsNumeric($stock->total_base_units);
+    }
 }

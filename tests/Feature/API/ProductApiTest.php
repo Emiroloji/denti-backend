@@ -285,4 +285,27 @@ class ProductApiTest extends TestCase
                 ->whereType('data', 'array')
                 ->etc());
     }
+
+    /** @test */
+    public function user_without_create_permission_cannot_create_product()
+    {
+        // Yetkileri olmayan yeni bir user
+        $unauthorizedUser = User::factory()->create([
+            'company_id' => $this->company->id,
+            'clinic_id' => $this->clinic->id,
+        ]);
+
+        $this->actingAs($unauthorizedUser);
+
+        $response = $this->postJson('/api/products', [
+            'name' => 'Parol 500mg',
+            'sku' => 'PR-001',
+            'unit' => 'tablet',
+            'is_active' => true,
+        ]);
+
+        // Forbidden veya yetkisiz işlemi kontrol eder (Spatie permission kullanıldığı var sayılıyor)
+        // Eğer route model binding veya form request authorize() metodunda kontrol varsa 403 döner.
+        $response->assertStatus(403);
+    }
 }
