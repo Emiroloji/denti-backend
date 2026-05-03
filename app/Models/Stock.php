@@ -5,6 +5,7 @@ namespace App\Models;
 
 use App\Models\Company;
 use App\Traits\Tenantable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stock extends Model
 {
-    use Tenantable, SoftDeletes;
+    use HasFactory, Tenantable, SoftDeletes;
     
     protected $appends = [];
 
@@ -196,6 +197,11 @@ class Stock extends Model
     {
         if (!$this->track_expiry || !$this->expiry_date) return null;
         return now()->diffInDays($this->expiry_date, false);
+    }
+
+    public function getAvailableStockAttribute($value)
+    {
+        return $this->current_stock - $this->reserved_stock;
     }
 
     // Model Events

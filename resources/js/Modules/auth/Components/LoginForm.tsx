@@ -40,7 +40,7 @@ export const LoginForm: React.FC = () => {
           size="large"
         >
           <Form.Item
-            name="company_code"
+            name="clinic_code"
             rules={[{ required: true, message: 'Lütfen klinik kodunu girin!' }]}
           >
             <Input prefix={<BankOutlined />} placeholder="Klinik Kodu" />

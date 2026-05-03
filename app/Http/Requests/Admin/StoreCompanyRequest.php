@@ -25,4 +25,11 @@ class StoreCompanyRequest extends FormRequest
             'owner_email' => 'nullable|email|unique:users,email',
         ];
     }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'code' => strtoupper($this->code),
+        ]);
+    }
 }

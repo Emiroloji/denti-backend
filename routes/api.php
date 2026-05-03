@@ -134,6 +134,17 @@ Route::middleware(['auth:sanctum', '2fa.verified'])->group(function () {
         Route::put('/{id}/complete', [\App\Http\Controllers\Api\StockRequestController::class, 'complete'])->middleware('permission:adjust-stocks');
     });
 
+    // Stock Transfers
+    Route::prefix('stock-transfers')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\StockTransferController::class, 'index'])->middleware('permission:view-stocks');
+        Route::get('/pending/count', [\App\Http\Controllers\Api\StockTransferController::class, 'getPendingCount'])->middleware('permission:view-stocks');
+        Route::post('/', [\App\Http\Controllers\Api\StockTransferController::class, 'store'])->middleware('permission:transfer-stocks');
+        Route::get('/{id}', [\App\Http\Controllers\Api\StockTransferController::class, 'show'])->middleware('permission:view-stocks');
+        Route::post('/{id}/approve', [\App\Http\Controllers\Api\StockTransferController::class, 'approve'])->middleware('permission:approve-transfers');
+        Route::post('/{id}/reject', [\App\Http\Controllers\Api\StockTransferController::class, 'reject'])->middleware('permission:approve-transfers');
+        Route::post('/{id}/cancel', [\App\Http\Controllers\Api\StockTransferController::class, 'cancel'])->middleware('permission:cancel-transfers');
+    });
+
     // Stock Transactions
     Route::prefix('stock-transactions')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\StockTransactionController::class, 'index'])->middleware('permission:view-audit-logs');

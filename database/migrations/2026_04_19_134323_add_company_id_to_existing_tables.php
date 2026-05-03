@@ -25,10 +25,11 @@ return new class extends Migration
 
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
-                // Mevcut veriler için nullable yapıyoruz, sonra 1'e setleyip constrained yapabiliriz.
-                // Şimdilik basitlik adına nullable ve index ekliyoruz.
-                $table->foreignId('company_id')->after('id')->nullable()->constrained('companies')->onDelete('cascade');
-                $table->index('company_id');
+                // Eğer company_id kolonu yoksa ekle
+                if (!Schema::hasColumn($tableName, 'company_id')) {
+                    $table->foreignId('company_id')->after('id')->nullable()->constrained('companies')->onDelete('cascade');
+                    $table->index('company_id');
+                }
             });
         }
     }

@@ -90,10 +90,10 @@ export const CompanyFormModal: React.FC<Props> = ({ open, editingCompany, onCanc
             label="Klinik Kodu (Giriş için)" 
             name="code" 
             rules={[
-              { required: true, message: 'Lütfen klinik kodunu girin!' },
-              { pattern: /^[A-Z0-9]+$/, message: 'Sadece büyük harf ve rakam kullanabilirsiniz.' }
+              { required: true, message: 'Lütfen klinik kodunu girin!' }
             ]}
             tooltip="Kullanıcıların giriş yaparken kullanacağı benzersiz kod (Örn: AKDENT01)"
+            normalize={(value) => value?.toUpperCase().replace(/[^A-Z0-9]/g, '')}
           >
             <Input placeholder="AKDENT01" style={{ textTransform: 'uppercase' }} />
           </Form.Item>
@@ -101,11 +101,9 @@ export const CompanyFormModal: React.FC<Props> = ({ open, editingCompany, onCanc
           <Form.Item 
             label="Domain Öneki" 
             name="domain" 
-            rules={[
-              { required: true, message: 'Lütfen domain önekini girin!' },
-              { pattern: /^[a-z0-9-]+$/, message: 'Sadece küçük harf, rakam ve tire kullanabilirsiniz.' }
-            ]}
+            rules={[{ required: true, message: 'Lütfen domain önekini girin!' }]}
             tooltip="akdent.denti.com şeklindeki adresin başındaki 'akdent' kısmı"
+            normalize={(value) => value?.toLowerCase().replace(/[^a-z0-9-]/g, '')}
           >
             <Input addonAfter=".denti.com" disabled={isEdit} placeholder="akdent" />
           </Form.Item>
@@ -156,10 +154,8 @@ export const CompanyFormModal: React.FC<Props> = ({ open, editingCompany, onCanc
               <Form.Item 
                 label="Kullanıcı Adı" 
                 name="owner_username" 
-                rules={[
-                  { required: true, message: 'Lütfen kullanıcı adını girin!' },
-                  { pattern: /^[a-z0-9._]+$/, message: 'Sadece küçük harf, rakam, nokta ve alt çizgi kullanabilirsiniz.' }
-                ]}
+                rules={[{ required: true, message: 'Lütfen kullanıcı adını girin!' }]}
+                normalize={(value) => value?.toLowerCase().replace(/[^a-z0-9._]/g, '')}
               >
                 <Input placeholder="admin.akdent" />
               </Form.Item>

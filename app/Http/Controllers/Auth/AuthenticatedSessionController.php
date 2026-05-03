@@ -20,7 +20,10 @@ class AuthenticatedSessionController extends Controller
 
     public function store(LoginRequest $request)
     {
-        $throttleKey = Str::lower($request->input('username')) . '|' . $request->input('clinic_code', 'admin') . '|' . $request->ip();
+        // Frontend'den clinic_code veya company_code gelebilir — normalize et
+        $clinicCode = $request->input('clinic_code') ?? $request->input('company_code');
+
+        $throttleKey = Str::lower($request->input('username')) . '|' . ($clinicCode ?? 'admin') . '|' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -41,13 +44,13 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Eğer clinic_code YOKSA (Admin Login), Super Admin kontrolü yap
-        if (!$request->filled('clinic_code')) {
+        if (empty($clinicCode)) {
             if (!$user->hasRole('Super Admin')) {
                 return back()->withErrors(['username' => 'Bu alana sadece sistem yöneticileri erişebilir.']);
             }
         } else {
             // Eğer clinic_code VARSA, kullanıcının o şirkete ait olduğundan emin ol
-            $company = Company::where('code', $request->clinic_code)->first();
+            $company = Company::whereRaw('LOWER(code) = ?', [strtolower($clinicCode)])->first();
             
             if (!$company) {
                 return back()->withErrors(['clinic_code' => 'Geçersiz klinik kodu.']);

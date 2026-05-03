@@ -19,8 +19,21 @@ class DashboardController extends Controller
         $user = Auth::user();
         $companyId = $user->company_id;
 
-        if (!$companyId) {
+        if (!$companyId && !$user->isSuperAdmin()) {
             return $this->error('Şirket bilgisi bulunamadı.', 404);
+        }
+
+        if ($user->isSuperAdmin()) {
+            $stats = [
+                'company_name' => 'Sistem Yönetimi',
+                'total_users' => User::count(),
+                'total_doctors' => User::role('Doctor')->count(),
+                'total_employees' => User::count(),
+                'total_stock_items' => Stock::count(),
+                'total_clinics' => Clinic::count(),
+                'is_super_admin' => true
+            ];
+            return $this->success($stats, 'Global dashboard stats retrieved successfully.');
         }
 
         $stats = [

@@ -8,7 +8,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Events\Stock\StockLevelChanged;
 use App\Listeners\Stock\CheckStockAlertsListener;
 use App\Listeners\Stock\ClearStockCacheListener;
+use App\Models\StockAlert;
 use App\Models\StockTransaction;
+use App\Observers\StockAlertObserver;
 use App\Observers\StockTransactionObserver;
 
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -74,6 +76,9 @@ class AppServiceProvider extends ServiceProvider
         // 🛡️ CRITICAL FIX: StockTransaction Observer'ı register et
         // Bu olmadan stok kullanımı sonrası stok miktarı güncellenmiyordu!
         StockTransaction::observe(StockTransactionObserver::class);
+        
+        // 📧 StockAlert Observer - Mail bildirimleri için
+        StockAlert::observe(StockAlertObserver::class);
 
         // Stok seviyesi değiştiğinde tetiklenecek listener'lar
         Event::listen(StockLevelChanged::class, CheckStockAlertsListener::class);

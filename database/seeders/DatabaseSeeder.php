@@ -17,7 +17,19 @@ class DatabaseSeeder extends Seeder
         // 1. Rolleri ve Yetkileri oluştur
         $this->call(RolesAndPermissionsSeeder::class);
 
-        // 2. Varsayılan bir Şirket oluştur
+        // 2. Super Admin Kullanıcısı oluştur (Şirket bağımsız)
+        $superAdmin = User::create([
+            'company_id' => null,
+            'name' => 'Super Admin',
+            'username' => 'superadmin',
+            'email' => 'superadmin@denti.com',
+            'password' => Hash::make('superadmin123'),
+            'is_active' => true,
+        ]);
+
+        $superAdmin->assignRole('Super Admin');
+
+        // 3. Varsayılan bir Şirket oluştur
         $company = Company::create([
             'name' => 'Denti Merkez Klinik',
             'domain' => 'denti-merkez.com',
@@ -25,22 +37,26 @@ class DatabaseSeeder extends Seeder
             'status' => 'active',
         ]);
 
-        // 3. Şirket Sahibi (Admin) Kullanıcısı oluştur
+        // 4. Şirket Sahibi (Admin) Kullanıcısı oluştur
         $admin = User::create([
             'company_id' => $company->id,
             'name' => 'Admin User',
+            'username' => 'admin',
             'email' => 'admin@denti.com',
             'password' => Hash::make('password'),
+            'is_active' => true,
         ]);
 
         $admin->assignRole('Company Owner');
 
-        // 4. Test Kullanıcısı oluştur
+        // 5. Test Kullanıcısı oluştur
         $testUser = User::create([
             'company_id' => $company->id,
             'name' => 'Test Doctor',
+            'username' => 'doctor',
             'email' => 'doctor@denti.com',
             'password' => Hash::make('password'),
+            'is_active' => true,
         ]);
 
         $testUser->assignRole('Doctor');

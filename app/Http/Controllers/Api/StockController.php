@@ -294,9 +294,25 @@ class StockController extends Controller
     {
         try {
             $this->authorize('viewAny', Stock::class);
+            $user = auth()->user();
             $clinicId = $request->query('clinic_id');
-            $companyId = auth()->user()->company_id;
+            $companyId = $user->company_id;
             
+            if (!$companyId && !$user->isSuperAdmin()) {
+                return $this->error('Şirket bilgisi bulunamadı.', 404);
+            }
+
+            if (!$companyId) {
+                return $this->success([
+                    'total_items' => 0,
+                    'critical_stock_items' => 0,
+                    'low_stock_items' => 0,
+                    'out_of_stock_items' => 0,
+                    'near_expiry_items' => 0,
+                    'expired_items' => 0,
+                ]);
+            }
+
             $stats = $this->stockService->getStockStats($companyId, $clinicId ? (int)$clinicId : null);
 
             return $this->success($stats);

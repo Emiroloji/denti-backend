@@ -8,6 +8,7 @@ namespace App\Models;
 
 use App\Models\Company;
 use App\Traits\Tenantable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,11 +17,12 @@ use Illuminate\Support\Facades\DB;
 
 class Supplier extends Model
 {
-    use Tenantable, SoftDeletes;
+    use HasFactory, Tenantable, SoftDeletes;
 
     protected $fillable = [
         'name', 'contact_person', 'phone', 'email', 'address',
-        'tax_number', 'is_active', 'additional_info', 'company_id'
+        'tax_number', 'website', 'payment_terms', 'notes',
+        'is_active', 'additional_info', 'company_id'
     ];
 
     protected $casts = [

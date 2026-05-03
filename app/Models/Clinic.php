@@ -8,6 +8,7 @@ namespace App\Models;
 
 use App\Models\Company;
 use App\Traits\Tenantable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Clinic extends Model
 {
-    use Tenantable, SoftDeletes;
+    use HasFactory, Tenantable, SoftDeletes;
 
     protected $fillable = [
         'name', 'description', 'responsible_person',

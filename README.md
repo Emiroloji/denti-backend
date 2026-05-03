@@ -1,61 +1,262 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Denti - Diş Kliniği Stok ve Malzeme Yönetim Sistemi
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 12">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Ant%20Design-5.0-0170FE?style=for-the-badge&logo=antdesign&logoColor=white" alt="Ant Design">
 </p>
 
-## About Laravel
+<p align="center">
+  <b>Türk yapımı, diş kliniklerine özel stok yönetim çözümü</b>
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Özellikler
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Güvenlik ve Yetkilendirme
+- **Rol Bazlı Erişim Kontrolü** - Admin, doktor, asistan rolleri
+- **İki Faktörlü Doğrulama (2FA)** - TOTP desteği
+- **Çok Şirketli Mimari** - Birden fazla klinik/şube yönetimi
+- **Şirket Bazlı Veri İzolasyonu** - Tenant güvenliği
 
-## Learning Laravel
+### Stok Yönetimi
+- **Batch Bazlı Takip** - Parti numarası ile detaylı izleme
+- **Son Kullanma Tarihi** - Otomatik uyarılar (7, 30 gün)
+- **Düşük Stok Uyarıları** - Yapılandırılabilir eşik değerleri
+- **Alt Birim Desteği** - Tablet/kapsül gibi alt birimler
+- **Barkod Desteği** - Hızlı ürün tanımlama
+- **Çok Klinik Desteği** - Şube bazlı stok takibi
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Stok Hareketleri
+- **Giriş/Çıkış/Transfer** - Detaylı hareket kayıtları
+- **Klinikler Arası Transfer** - Onay akışlı transfer sistemi
+- **Stok Düzeltme** - Manuel düzeltme kayıtları
+- **İade Yönetimi** - Tedarikçi iadeleri
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Uyarı Sistemi
+- **Düşük Stok** - Eşik değerinin altına inince
+- **Kritik Stok** - Acil sipariş gerektiren seviye
+- **Son Kullanma** - Yaklaşan/Geçmiş tarih uyarıları
+- **Toplu Çözümleme** - Çoklu uyarı yönetimi
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Raporlama
+- **Stok Durumu** - Anlık stok özeti
+- **Hareket Geçmişi** - Detaylı işlem kayıtları
+- **Finansal Değer** - Stok değeri hesaplamaları
+- **PDF/Excel Export** - Rapor dışa aktarım
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Kurulum
 
-### Premium Partners
+### Gereksinimler
+- PHP 8.2 veya üzeri
+- MySQL 8.0+ veya PostgreSQL 14+
+- Node.js 18+
+- Composer 2.5+
+- Redis (opsiyonel, kuyruk için)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Adım Adım Kurulum
 
-## Contributing
+```bash
+# 1. Projeyi klonlayın
+git clone https://github.com/yourcompany/denti.git
+cd denti
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 2. PHP bağımlılıkları
+composer install
 
-## Code of Conduct
+# 3. JavaScript bağımlılıkları
+npm install
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 4. Ortam dosyasını oluşturun
+cp .env.example .env
 
-## Security Vulnerabilities
+# 5. Uygulama anahtarı oluşturun
+php artisan key:generate
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 6. Veritabanı yapılandırması
+# .env dosyasında DB ayarlarını yapın, sonra:
+php artisan migrate --seed
 
-## License
+# 7. Frontend build
+npm run build
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# 8. Geliştirme sunucusu
+php artisan serve
+npm run dev  # Ayrı terminalde
+```
+
+### Demo Veri
+Seed edilen demo verileri kullanarak hemen başlayabilirsiniz:
+
+```
+Şirket Kodu: DEMO
+Kullanıcı Adı: admin
+Şifre: password123
+```
+
+---
+
+## Proje Yapısı
+
+```
+denti/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/Api/    # API endpoint'leri
+│   │   ├── Resources/          # API response formatlayıcı
+│   │   └── Requests/           # Form validasyon
+│   ├── Models/                 # Eloquent modeller
+│   ├── Services/               # İş mantığı (Business Logic)
+│   ├── Repositories/           # Veri erişim katmanı
+│   ├── Observers/              # Model olay dinleyicileri
+│   ├── Mail/                   # E-posta şablonları
+│   └── Policies/               # Yetkilendirme politikaları
+├── database/
+│   ├── migrations/             # Veritabanı şemaları
+│   └── seeders/                # Demo veri
+├── resources/
+│   └── js/
+│       └── Modules/
+│           ├── stock/           # Stok modülü
+│           ├── alerts/          # Uyarı modülü
+│           ├── clinics/         # Klinik yönetimi
+│           ├── users/           # Kullanıcı yönetimi
+│           └── auth/            # Kimlik doğrulama
+├── routes/
+│   ├── web.php                # Inertia sayfa rotaları
+│   └── api.php                # API rotaları
+└── tests/
+    ├── Unit/                   # Birim testleri
+    ├── Feature/                # Entegrasyon testleri
+    └── E2E/                    # Playwright E2E testleri
+```
+
+---
+
+## Geliştirme
+
+### Kod Standartları
+```bash
+# PHP kod stil kontrolü
+./vendor/bin/pint
+
+# Frontend lint
+npm run lint
+
+# TypeScript tip kontrolü
+npx tsc --noEmit
+```
+
+### Test
+```bash
+# Backend testleri
+php artisan test
+
+# Frontend testleri
+npm run test
+
+# E2E testleri
+npx playwright test
+```
+
+### Build
+```bash
+# Production build
+npm run build
+
+# Optimize edilmiş Laravel
+php artisan optimize
+```
+
+---
+
+## Güvenlik Özellikleri
+
+- **Spatie Permission** - Detaylı yetkilendirme
+- **2FA (Two Factor Auth)** - Google Authenticator desteği
+- **Rate Limiting** - Brute force koruması
+- **CSRF Protection** - Form güvenliği
+- **SQL Injection Koruması** - Prepared statements
+- **XSS Koruması** - Blade escaping
+- **Tenant İzolasyonu** - Global scope ile veri ayrımı
+
+---
+
+## API Dokümantasyonu
+
+API dokümantasyonuna `/docs` adresinden erişebilirsiniz (Scribe ile oluşturulmuştur).
+
+### Kimlik Doğrulama
+```bash
+curl -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company_code": "DEMO",
+    "username": "admin",
+    "password": "password123"
+  }'
+```
+
+### Örnek: Ürün Listeleme
+```bash
+curl -X GET http://localhost:8000/api/products \
+  -H "Authorization: Bearer {token}"
+```
+
+---
+
+## Test Kullanıcıları
+
+| Rol | Kullanıcı Adı | Şifre | Yetkiler |
+|-----|---------------|-------|----------|
+| Admin | admin | password123 | Tüm yetkiler |
+| Doktor | doctor | password123 | Stok görüntüleme, kullanma |
+| Asistan | assistant | password123 | Sadece görüntüleme |
+
+---
+
+## Deployment
+
+### Production Checklist
+- **`.env` production ayarları**
+- **`APP_DEBUG=false`**
+- **`APP_ENV=production`**
+- **SSL sertifikası**
+- **Queue worker (Supervisor)**
+- **Scheduler (Cron job)**
+- **Log rotation**
+- **Backup stratejisi**
+
+### Docker (Opsiyonel)
+```bash
+docker-compose up -d
+# Geliştirme ortamı hazır!
+```
+
+---
+
+## Destek
+
+- **Email**: support@denti.com.tr
+- **Telefon**: +90 555 123 4567
+- **Web**: https://denti.com.tr
+
+---
+
+## Lisans
+
+Bu proje [MIT](LICENSE) lisansı ile lisanslanmıştır.
+
+---
+
+<p align="center">
+  **Türk yapımı, yerel destek**
+</p>
+
+<p align="center">
+  Made with ❤️ in Istanbul
+</p>

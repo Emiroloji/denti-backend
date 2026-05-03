@@ -38,8 +38,8 @@ class AuthController extends Controller
             return $this->error('Şirket kodu gereklidir.', 422);
         }
 
-        // Şirket koduna bakıyoruz
-        $company = Company::where('code', $request->company_code)->first();
+        // Şirket koduna bakıyoruz (case-insensitive)
+        $company = Company::whereRaw('LOWER(code) = ?', [strtolower($request->company_code)])->first();
         
         if (!$company) {
             RateLimiter::hit($throttleKey, 60);
@@ -56,7 +56,9 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             RateLimiter::clear($throttleKey);
-            $request->session()->regenerate();
+            if ($request->hasSession()) {
+                $request->session()->regenerate();
+            }
             
             $user = Auth::user()->load(['company', 'roles', 'clinic']);
 
@@ -104,7 +106,9 @@ class AuthController extends Controller
             }
 
             Auth::login($user);
-            $request->session()->regenerate();
+            if ($request->hasSession()) {
+                $request->session()->regenerate();
+            }
             
             $user->load(['company', 'roles']);
 
@@ -136,8 +140,10 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return $this->success(null, 'Logged out successfully');
     }

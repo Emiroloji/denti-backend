@@ -11,6 +11,7 @@ export const useAuth = () => {
   const isAuthenticated = !!user;
 
   const login = useCallback(async (data: any) => {
+    console.log('Login data:', data);
     router.post('/login', data);
   }, []);
 

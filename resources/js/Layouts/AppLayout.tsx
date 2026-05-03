@@ -34,7 +34,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
   const { url } = usePage()
   const { user, logout } = useAuth()
-  const { hasPermission, isAdmin } = usePermissions()
+  const { hasPermission, isAdmin, isSuperAdmin } = usePermissions()
   
   // Bekleyen uyarı sayısını çek
   const { data: pendingAlertCount } = usePendingAlertCount()
@@ -47,7 +47,16 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
     }
   }
 
-  const menuItems: MenuProps['items'] = [
+  // Super Admin sadece Şirket Yönetimi görebilir
+  const superAdminMenuItems: MenuProps['items'] = [
+    {
+      key: '/admin/companies',
+      icon: <BankOutlined />,
+      label: <Link href="/admin/companies">Şirket Yönetimi</Link>,
+    },
+  ]
+
+  const regularMenuItems: MenuProps['items'] = [
     {
       key: '/',
       icon: <DashboardOutlined />,
@@ -122,6 +131,9 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
       }
     ] : []),
   ]
+
+  // Super Admin mi kontrol et
+  const menuItems = isSuperAdmin() ? superAdminMenuItems : regularMenuItems
 
   const userMenuItems: MenuProps['items'] = [
     {

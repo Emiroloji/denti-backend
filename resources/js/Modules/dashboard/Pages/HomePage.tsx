@@ -1,7 +1,8 @@
 // src/modules/dashboard/Pages/HomePage.tsx
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Card, Row, Col, Statistic, Typography, Divider, Skeleton } from 'antd'
+import { router } from '@inertiajs/react'
 import { 
   UserOutlined, 
   MedicineBoxOutlined, 
@@ -10,11 +11,20 @@ import {
   SmileOutlined
 } from '@ant-design/icons'
 import { useDashboard } from '../Hooks/useDashboard'
+import { usePermissions } from '@/Hooks/usePermissions'
 
 const { Title, Text } = Typography
 
 export const HomePage: React.FC = () => {
   const { data: stats, isLoading } = useDashboard()
+  const { isSuperAdmin } = usePermissions()
+
+  // Super Admin ana sayfaya gelirse şirket yönetimine yönlendir
+  useEffect(() => {
+    if (isSuperAdmin()) {
+      router.visit('/admin/companies')
+    }
+  }, [isSuperAdmin])
 
   if (isLoading) {
     return <Skeleton active paragraph={{ rows: 10 }} />

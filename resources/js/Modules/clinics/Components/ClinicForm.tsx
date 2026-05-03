@@ -50,7 +50,17 @@ export const ClinicForm: React.FC<ClinicFormProps> = ({
       // Form alanlarını mevcut klinik verileriyle doldur
       form.setFieldsValue({
         name: clinic.name,
-        is_active: clinic.is_active
+        description: clinic.description,
+        phone: clinic.phone,
+        email: clinic.email,
+        manager_name: clinic.manager_name,
+        website: clinic.website,
+        city: clinic.city,
+        district: clinic.district,
+        postal_code: clinic.postal_code,
+        address: clinic.address,
+        opening_hours: clinic.opening_hours,
+        is_active: clinic.is_active,
       })
     }
   }, [clinic, form])

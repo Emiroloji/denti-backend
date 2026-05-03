@@ -14,9 +14,14 @@ class Company extends Model
         'name',
         'code',
         'domain',
+        'address',
+        'phone',
+        'email',
+        'alert_emails',
         'subscription_plan',
         'max_users',
         'status',
+        'is_active',
     ];
 
     /**
