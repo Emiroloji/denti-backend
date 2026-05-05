@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->text('alert_emails')->nullable()->after('is_active')
-                ->comment('Virgülle ayrılmış e-posta adresleri (bilgilendirme için)');
+            if (!Schema::hasColumn('companies', 'alert_emails')) {
+                $table->text('alert_emails')->nullable()->after('is_active')
+                    ->comment('Virgülle ayrılmış e-posta adresleri (bilgilendirme için)');
+            }
         });
     }
 
