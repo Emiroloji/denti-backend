@@ -55,11 +55,12 @@ export const StockTrendChart: React.FC<StockTrendChartProps> = ({
   // Use prop transactions if provided, otherwise fetch from API
   const { 
     data: apiTransactions, 
-    isLoading, 
+    isLoading: isApiLoading, 
     refetch 
-  } = useStockTransactions(stockId, stockId && !propTransactions ? filters : {})
+  } = useStockTransactions(stockId, stockId && propTransactions === undefined ? filters : {})
   
-  const transactions = propTransactions || apiTransactions?.data
+  const transactions = propTransactions !== undefined ? propTransactions : apiTransactions?.data
+  const isLoading = propTransactions === undefined ? isApiLoading : false
 
   const chartData = useMemo(() => {
     if (!transactions || transactions.length === 0) return []
@@ -68,20 +69,38 @@ export const StockTrendChart: React.FC<StockTrendChartProps> = ({
       new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
     )
 
-    let currentStock = 0
+    // Her bir partinin (batch) o andaki seviyesini tutacak bir harita
+    const batchLevels: { [key: number]: number } = {}
     const dailyData = new Map()
 
+    // İlk işlemden hemen öncesi için bir başlangıç noktası
+    if (sortedTransactions.length > 0) {
+      dailyData.set('start', {
+        date: dayjs(sortedTransactions[0].transaction_date).subtract(1, 'day').format('DD/MM'),
+        stockLevel: 0,
+        change: 0,
+        transactionType: 'Başlangıç',
+        transactionCount: 0
+      })
+    }
+
     sortedTransactions.forEach(transaction => {
-      const date = dayjs(transaction.transaction_date).format('DD/MM/YYYY')
+      const date = dayjs(transaction.transaction_date).format('DD/MM')
+      const batchId = transaction.stock_id
       
-      const isPositive = ['purchase', 'adjustment_increase', 'transfer_in', 'returned'].includes(transaction.type)
+      const isPositive = ['purchase', 'adjustment_increase', 'transfer_in', 'returned', 'in'].includes(transaction.type)
       const change = isPositive ? transaction.quantity : -transaction.quantity
-      currentStock += change
+      
+      // Bu partinin yeni seviyesini güncelle (Eğer new_stock varsa onu kullan, yoksa üzerine ekle)
+      batchLevels[batchId] = transaction.new_stock !== undefined ? transaction.new_stock : ((batchLevels[batchId] || 0) + change)
+
+      // Tüm partilerin o andaki toplamını hesapla
+      const totalProductStock = Object.values(batchLevels).reduce((sum, val) => sum + val, 0)
 
       if (!dailyData.has(date)) {
         dailyData.set(date, {
           date,
-          stockLevel: currentStock,
+          stockLevel: totalProductStock,
           change: change,
           transactionType: transaction.type_text || transaction.type,
           transactionCount: 1
@@ -90,14 +109,19 @@ export const StockTrendChart: React.FC<StockTrendChartProps> = ({
         const existing = dailyData.get(date)
         dailyData.set(date, {
           ...existing,
-          stockLevel: currentStock,
+          stockLevel: totalProductStock, // Gün sonundaki toplam seviye
           change: existing.change + change,
           transactionCount: existing.transactionCount + 1
         })
       }
     })
 
-    return Array.from(dailyData.values()).slice(-30)
+    const result = Array.from(dailyData.values())
+    // Eğer sadece başlangıç ve tek gün varsa çizgiyi uzatmak için bugünü ekle
+    if (result.length === 2) {
+       result.push({ ...result[1], date: 'Bugün' })
+    }
+    return result
   }, [transactions])
 
   const handleDateRangeChange = (dates: any) => {
@@ -245,10 +269,12 @@ export const StockTrendChart: React.FC<StockTrendChartProps> = ({
   }
 
   // Backward compatibility mode - no controls
-  if (propTransactions) {
+  if (propTransactions !== undefined) {
     return (
-      <div style={{ height: 350, width: '100%', marginTop: 24 }}>
-        {chartData.length === 0 ? (
+      <div style={{ height: 350, width: '100%', marginTop: 24, position: 'relative' }}>
+        {isLoading ? (
+          <div style={{ padding: '40px 0', textAlign: 'center' }}>Yükleniyor...</div>
+        ) : chartData.length === 0 ? (
           <div style={{ padding: '40px 0', textAlign: 'center' }}>
             <Text type="secondary">Bu ürün için henüz işlem geçmişi bulunmuyor.</Text>
           </div>

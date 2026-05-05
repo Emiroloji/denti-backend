@@ -40,9 +40,11 @@ export const StockRequestActions: React.FC<StockRequestActionsProps> = ({
   const { 
     approveStockRequest, 
     rejectStockRequest, 
+    shipStockRequest,
     completeStockRequest,
     isApproving,
     isRejecting,
+    isShipping,
     isCompleting
   } = useStockRequests()
 
@@ -83,6 +85,20 @@ export const StockRequestActions: React.FC<StockRequestActionsProps> = ({
       onSuccess?.()
     } catch (error) {
       console.error('Reject error:', error)
+    }
+  }
+
+  const handleShip = async () => {
+    try {
+      await shipStockRequest({
+        id: request.id,
+        data: {
+          performed_by: currentUser
+        }
+      })
+      onSuccess?.()
+    } catch (error) {
+      console.error('Ship error:', error)
     }
   }
 
@@ -256,16 +272,39 @@ export const StockRequestActions: React.FC<StockRequestActionsProps> = ({
     )
   }
 
-  // Onaylanan talepler için tamamlama butonu
+  // Onaylanan talepler için yola çıkar butonu
   if (request.status === 'approved') {
     return (
       <Popconfirm
-        title="Transferi Tamamla"
-        description={`${request.approved_quantity} ${request.stock?.unit} transfer edilsin mi?`}
+        title="Transferi Başlat"
+        description="Ürünler yola çıkarılsın mı?"
+        onConfirm={handleShip}
+        okText="Evet"
+        cancelText="Hayır"
+        icon={<ExclamationCircleOutlined style={{ color: 'blue' }} />}
+      >
+        <Button
+          type="primary"
+          icon={<CheckOutlined />}
+          size={buttonSize}
+          loading={isShipping}
+        >
+          Yola Çıkar
+        </Button>
+      </Popconfirm>
+    )
+  }
+
+  // Transfer sürecindeki talepler için teslim al butonu
+  if (request.status === 'in_transit') {
+    return (
+      <Popconfirm
+        title="Teslim Al"
+        description="Ürünler teslim alındı mı?"
         onConfirm={handleComplete}
         okText="Evet"
         cancelText="Hayır"
-        icon={<ExclamationCircleOutlined style={{ color: 'orange' }} />}
+        icon={<ExclamationCircleOutlined style={{ color: 'green' }} />}
       >
         <Button
           type="primary"
@@ -273,7 +312,7 @@ export const StockRequestActions: React.FC<StockRequestActionsProps> = ({
           size={buttonSize}
           loading={isCompleting}
         >
-          Transferi Tamamla
+          Teslim Al
         </Button>
       </Popconfirm>
     )

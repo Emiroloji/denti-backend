@@ -60,9 +60,7 @@ Route::middleware(['auth'])->group(function () {
         return Inertia::render('Employee/Index');
     });
 
-    Route::get('/roles', function () {
-        return Inertia::render('Role/Index');
-    });
+
 
     Route::get('/profile', function () {
         return Inertia::render('Profile/Index');

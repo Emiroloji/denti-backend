@@ -13,12 +13,14 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'Acil', 'color' => '#ff4d4f', 'description' => 'Hemen yapılması gerekenler'],
-            ['name' => 'Rutin', 'color' => '#1890ff', 'description' => 'Günlük işler'],
+            ['name' => 'Sarf Malzemeler', 'color' => '#1890ff', 'description' => 'Genel sarf malzemeleri'],
             ['name' => 'Dolgu Malzemeleri', 'color' => '#52c41a', 'description' => 'Kompozit, amalgam vb.'],
-            ['name' => 'Cerrahi', 'color' => '#722ed1', 'description' => 'Cerrahi alet ve malzemeler'],
-            ['name' => 'İmplant', 'color' => '#faad14', 'description' => 'İmplant ve parçaları'],
-            ['name' => 'Sarf Malzeme', 'color' => '#13c2c2', 'description' => 'Eldiven, maske vb.'],
+            ['name' => 'Endodontik Malzemeler', 'color' => '#faad14', 'description' => 'Kanal tedavisi malzemeleri'],
+            ['name' => 'Cerrahi Malzemeler', 'color' => '#ff4d4f', 'description' => 'Cerrahi alet ve sarflar'],
+            ['name' => 'Protez Malzemeleri', 'color' => '#722ed1', 'description' => 'Ölçü maddeleri, porselen vb.'],
+            ['name' => 'Ortodontik Malzemeler', 'color' => '#eb2f96', 'description' => 'Braket, tel vb.'],
+            ['name' => 'Periodontolojik Malzemeler', 'color' => '#13c2c2', 'description' => 'Diş eti tedavisi malzemeleri'],
+            ['name' => 'Pedodontik Malzemeler', 'color' => '#2f54eb', 'description' => 'Çocuk diş hekimliği malzemeleri'],
         ];
 
         foreach ($categories as $category) {

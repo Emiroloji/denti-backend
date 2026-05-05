@@ -113,14 +113,14 @@ export const UserManagementPage: React.FC = () => {
       ),
     },
     {
-      title: 'Roller',
-      dataIndex: 'roles',
-      key: 'roles',
-      render: (roles: User['roles']) => (
+      title: 'Yetkiler',
+      dataIndex: 'permissions',
+      key: 'permissions',
+      render: (permissions: User['permissions']) => (
         <Space wrap>
-          {roles.length > 0 ? roles.map(role => (
-            <Tag color="geekblue" key={role.id}>{role.name}</Tag>
-          )) : <Text type="secondary">Rol Atanmamış</Text>}
+          {permissions && permissions.length > 0 ? (
+            <Text type="secondary">{permissions.length} Özel Yetki</Text>
+          ) : <Text type="secondary">Yetki Atanmamış</Text>}
         </Space>
       ),
     },
@@ -174,7 +174,7 @@ export const UserManagementPage: React.FC = () => {
             <TeamOutlined style={{ fontSize: '28px', color: '#1890ff' }} />
             <div>
               <Title level={3} style={{ margin: 0 }}>Personel Yönetimi</Title>
-              <Text type="secondary">Klinik bünyesindeki personelleri listeleyebilir, rollerini ve erişim durumlarını yönetebilirsiniz.</Text>
+              <Text type="secondary">Klinik bünyesindeki personelleri listeleyebilir, özel yetkilerini ve erişim durumlarını yönetebilirsiniz.</Text>
             </div>
           </Space>
         </Col>

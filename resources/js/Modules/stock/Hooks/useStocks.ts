@@ -202,9 +202,9 @@ export const useStocks = (filters?: StockFilter) => {
       stockApi.adjustStock(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS] })
+      queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.PRODUCTS] })
       queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCK_STATS] })
       queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCK_LEVELS] })
-      queryClient.invalidateQueries({ queryKey: [STOCK_QUERY_KEYS.STOCKS, STOCK_QUERY_KEYS.TRANSACTIONS] })
       message.success('Stok miktarı başarıyla ayarlandı!')
     },
     onError: handleError('Stok ayarlanırken hata oluştu!')

@@ -6,7 +6,6 @@ export interface Clinic {
   address: string
   phone: string
   email?: string
-  manager_name?: string
   description?: string
   is_active: boolean
   city: string
@@ -24,7 +23,6 @@ export interface CreateClinicRequest {
   address: string
   phone: string
   email?: string
-  manager_name?: string
   description?: string
   city: string
   district: string
@@ -39,7 +37,6 @@ export interface UpdateClinicRequest {
   address?: string
   phone?: string
   email?: string
-  manager_name?: string
   description?: string
   city?: string
   district?: string
@@ -54,7 +51,6 @@ export interface ClinicFilter {
   city?: string
   district?: string
   is_active?: boolean
-  manager_name?: string
   page?: number
   per_page?: number
   sort_by?: 'name' | 'city' | 'created_at'

@@ -73,6 +73,18 @@ export const useStockRequests = (filters?: StockRequestFilters) => {
     }
   })
 
+  const shipMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CompleteStockRequestRequest }) =>
+      stockRequestApi.ship(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stockRequests'] })
+      message.success('Transfer süreci başlatıldı (Yola çıktı).')
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Transfer başlatılırken hata oluştu!')
+    }
+  })
+
   return {
     stockRequests,
     isLoading,
@@ -81,10 +93,12 @@ export const useStockRequests = (filters?: StockRequestFilters) => {
     createStockRequest: createMutation.mutateAsync,
     approveStockRequest: approveMutation.mutateAsync,
     rejectStockRequest: rejectMutation.mutateAsync,
+    shipStockRequest: shipMutation.mutateAsync,
     completeStockRequest: completeMutation.mutateAsync,
     isCreating: createMutation.isPending,
     isApproving: approveMutation.isPending,
     isRejecting: rejectMutation.isPending,
+    isShipping: shipMutation.isPending,
     isCompleting: completeMutation.isPending
   }
 }

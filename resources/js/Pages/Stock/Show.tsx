@@ -102,7 +102,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                         <Col>
                             {data.has_expiration_date ? (
                                 <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsAddBatchModalVisible(true)}>
-                                    Yeni Parti Ekle
+                                    Yeni Stok Ekle
                                 </Button>
                             ) : (
                                 <Button 
@@ -136,7 +136,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                         </Col>
                         <Col span={6}>
                             <Statistic 
-                                title="Parti Sayısı" 
+                                title="Stok Kaydı" 
                                 value={data.batches?.length || 0} 
                             />
                         </Col>
@@ -159,11 +159,12 @@ const ProductShow = ({ product: initialProduct }: Props) => {
 
                 {/* Content Tabs */}
                 <Tabs
-                    defaultActiveKey={data.has_expiration_date ? 'batches' : 'history'}
+                    defaultActiveKey="batches"
+                    destroyInactiveTabPane={true}
                     items={[
-                        ...(data.has_expiration_date ? [{
+                        {
                             key: 'batches',
-                            label: <span><DatabaseOutlined /> Stok Partileri</span>,
+                            label: <span><DatabaseOutlined /> Ürün Detayları</span>,
                             children: (
                                 <Card variant="borderless" className="premium-card">
                                     <StockTable 
@@ -181,7 +182,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                                     />
                                 </Card>
                             )
-                        }] : []),
+                        },
                         {
                             key: 'history',
                             label: <span><HistoryOutlined /> İşlem Geçmişi</span>,
@@ -200,7 +201,9 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                             children: (
                                 <Card variant="borderless" className="premium-card">
                                     <Title level={5}>Stok Değişim Trendi</Title>
-                                    <StockTrendChart stockId={data.id} transactions={transactions || []} />
+                                    <div style={{ minHeight: '400px' }}>
+                                        <StockTrendChart stockId={data.id} transactions={transactions} />
+                                    </div>
                                 </Card>
                             )
                         },
@@ -236,7 +239,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
                                                     <Text type="secondary">Takip Tipi</Text>
                                                     <div>
                                                         <Tag color={data.has_expiration_date ? 'purple' : 'orange'}>
-                                                            {data.has_expiration_date ? 'Parti / SKT Takibi' : 'Genel Stok Takibi'}
+                                                            {data.has_expiration_date ? 'Süreli / SKT Takibi' : 'Genel Stok Takibi'}
                                                         </Tag>
                                                     </div>
                                                 </div>
@@ -293,7 +296,7 @@ const ProductShow = ({ product: initialProduct }: Props) => {
             </Space>
 
             <Modal
-                title={`${data.name} - Yeni Stok Girişi (Parti)`}
+                title={`${data.name} - Yeni Stok Girişi`}
                 open={isAddBatchModalVisible}
                 onCancel={() => setIsAddBatchModalVisible(false)}
                 footer={null}

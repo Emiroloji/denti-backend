@@ -47,6 +47,7 @@ export interface StockRequest {
   export type StockRequestStatus = 
     | 'pending' 
     | 'approved' 
+    | 'in_transit'
     | 'rejected' 
     | 'completed'
   
@@ -87,6 +88,7 @@ export interface StockRequest {
     total: number
     pending: number
     approved: number
+    in_transit: number
     rejected: number
     completed: number
   }

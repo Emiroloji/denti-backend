@@ -48,6 +48,7 @@ export const StockRequestCard: React.FC<StockRequestCardProps> = ({
     switch (status) {
       case 'pending': return '#faad14'
       case 'approved': return '#1890ff'
+      case 'in_transit': return '#13c2c2'
       case 'rejected': return '#ff4d4f'
       case 'completed': return '#52c41a'
       default: return '#d9d9d9'

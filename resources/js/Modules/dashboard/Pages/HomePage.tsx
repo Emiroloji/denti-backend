@@ -8,7 +8,8 @@ import {
   MedicineBoxOutlined, 
   DatabaseOutlined, 
   HomeOutlined,
-  SmileOutlined
+  SmileOutlined,
+  TruckOutlined
 } from '@ant-design/icons'
 import { useDashboard } from '../Hooks/useDashboard'
 import { usePermissions } from '@/Hooks/usePermissions'
@@ -47,16 +48,6 @@ export const HomePage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card variant="borderless" className="dashboard-card">
             <Statistic
-              title="Toplam Doktor"
-              value={stats?.total_doctors}
-              prefix={<MedicineBoxOutlined style={{ color: '#1890ff' }} />}
-              styles={{ content: { color: '#1890ff' } }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card variant="borderless" className="dashboard-card">
-            <Statistic
               title="Toplam Çalışan"
               value={stats?.total_employees}
               prefix={<UserOutlined style={{ color: '#52c41a' }} />}
@@ -81,6 +72,16 @@ export const HomePage: React.FC = () => {
               value={stats?.total_stock_items}
               prefix={<DatabaseOutlined style={{ color: '#eb2f96' }} />}
               styles={{ content: { color: '#eb2f96' } }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card variant="borderless" className="dashboard-card">
+            <Statistic
+              title="Toplam Tedarikçi"
+              value={stats?.total_suppliers}
+              prefix={<TruckOutlined style={{ color: '#722ed1' }} />}
+              styles={{ content: { color: '#722ed1' } }}
             />
           </Card>
         </Col>

@@ -121,11 +121,6 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
             key: '/employees',
             icon: <TeamOutlined />,
             label: <Link href="/employees">Personel Yönetimi</Link>,
-          },
-          {
-            key: '/roles',
-            icon: <SafetyCertificateOutlined />,
-            label: <Link href="/roles">Rol ve Yetkiler</Link>,
           }
         ]
       }

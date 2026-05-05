@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Stock;
+use App\Models\Product;
 use App\Models\Clinic;
 use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -29,8 +29,9 @@ class DashboardController extends Controller
                 'total_users' => User::count(),
                 'total_doctors' => User::role('Doctor')->count(),
                 'total_employees' => User::count(),
-                'total_stock_items' => Stock::count(),
+                'total_stock_items' => Product::count(),
                 'total_clinics' => Clinic::count(),
+                'total_suppliers' => \App\Models\Supplier::count(),
                 'is_super_admin' => true
             ];
             return $this->success($stats, 'Global dashboard stats retrieved successfully.');
@@ -41,8 +42,9 @@ class DashboardController extends Controller
             'total_users' => User::where('company_id', $companyId)->count(),
             'total_doctors' => User::where('company_id', $companyId)->role('Doctor')->count(),
             'total_employees' => User::where('company_id', $companyId)->count(),
-            'total_stock_items' => Stock::where('company_id', $companyId)->count(),
+            'total_stock_items' => Product::where('company_id', $companyId)->count(),
             'total_clinics' => Clinic::where('company_id', $companyId)->count(),
+            'total_suppliers' => \App\Models\Supplier::where('company_id', $companyId)->count(),
         ];
 
         return $this->success($stats, 'Dashboard stats retrieved successfully.');

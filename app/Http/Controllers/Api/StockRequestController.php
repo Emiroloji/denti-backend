@@ -190,6 +190,44 @@ class StockRequestController extends Controller
         }
     }
 
+    public function ship(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'performed_by' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $result = $this->stockRequestService->shipRequest(
+                (int)$id,
+                $validator->validated()['performed_by']
+            );
+
+            if (!$result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transfer başlatılamadı'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transfer süreci başlatıldı'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
     public function complete(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [

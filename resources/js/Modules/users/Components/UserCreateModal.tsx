@@ -1,7 +1,7 @@
 // src/modules/users/Components/UserCreateModal.tsx
 
 import React from 'react';
-import { Modal, Form, Input, Select, Switch } from 'antd';
+import { Modal, Form, Input, Select, Switch, Checkbox, Spin, Row, Col } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import { useRoles } from '../../roles/Hooks/useRoles';
 import { useClinics } from '@/Modules/clinics/Hooks/useClinics';
@@ -20,7 +20,7 @@ export const UserCreateModal: React.FC<UserCreateModalProps> = ({
   loading,
 }) => {
   const [form] = Form.useForm();
-  const { roles, isLoading: isRolesLoading } = useRoles();
+  const { permissionGroups, isPermissionsLoading } = useRoles();
   const { clinics, isLoading: isClinicsLoading } = useClinics();
 
   return (
@@ -97,20 +97,29 @@ export const UserCreateModal: React.FC<UserCreateModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Rol"
-          name="role_id"
-          rules={[{ required: true, message: 'Lütfen bir rol seçiniz.' }]}
+          label="Yetkiler"
+          name="permissions"
         >
-          <Select 
-            placeholder="Rol seçin" 
-            loading={isRolesLoading}
-          >
-            {roles.map((role: any) => (
-              <Select.Option key={role.id} value={role.id}>
-                {role.name}
-              </Select.Option>
-            ))}
-          </Select>
+          {isPermissionsLoading ? (
+            <Spin size="small" />
+          ) : (
+            <Checkbox.Group style={{ width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {permissionGroups?.map((group: any) => (
+                  <div key={group.module}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1890ff' }}>{group.module}</div>
+                    <Row gutter={[8, 8]}>
+                      {group.permissions.map((p: any) => (
+                        <Col span={12} key={p.name}>
+                          <Checkbox value={p.name}>{p.name}</Checkbox>
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                ))}
+              </div>
+            </Checkbox.Group>
+          )}
         </Form.Item>
 
         <Form.Item

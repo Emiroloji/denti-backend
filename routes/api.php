@@ -131,6 +131,7 @@ Route::middleware(['auth:sanctum', '2fa.verified'])->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\Api\StockRequestController::class, 'show'])->middleware('permission:view-stocks');
         Route::put('/{id}/approve', [\App\Http\Controllers\Api\StockRequestController::class, 'approve'])->middleware('permission:adjust-stocks');
         Route::put('/{id}/reject', [\App\Http\Controllers\Api\StockRequestController::class, 'reject'])->middleware('permission:adjust-stocks');
+        Route::put('/{id}/ship', [\App\Http\Controllers\Api\StockRequestController::class, 'ship'])->middleware('permission:adjust-stocks');
         Route::put('/{id}/complete', [\App\Http\Controllers\Api\StockRequestController::class, 'complete'])->middleware('permission:adjust-stocks');
     });
 

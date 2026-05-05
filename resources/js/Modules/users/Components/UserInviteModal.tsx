@@ -1,7 +1,7 @@
 // src/modules/users/Components/UserInviteModal.tsx
 
 import React, { useEffect } from 'react';
-import { Modal, Form, Input, Select, Alert } from 'antd';
+import { Modal, Form, Input, Select, Alert, Checkbox, Spin, Row, Col } from 'antd';
 import { MailOutlined } from '@ant-design/icons';
 import { InviteUserPayload } from '../Types/user.types';
 import { useRoles } from '../../roles/Hooks/useRoles';
@@ -20,7 +20,7 @@ export const UserInviteModal: React.FC<UserInviteModalProps> = ({
   loading,
 }) => {
   const [form] = Form.useForm();
-  const { roles, isLoading: isRolesLoading } = useRoles();
+  const { permissionGroups, isPermissionsLoading } = useRoles();
 
   useEffect(() => {
     if (!open) {
@@ -64,20 +64,29 @@ export const UserInviteModal: React.FC<UserInviteModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Rol"
-          name="role"
-          rules={[{ required: true, message: 'Lütfen bir rol seçiniz.' }]}
+          label="Yetkiler"
+          name="permissions"
         >
-          <Select 
-            placeholder="Rol seçin" 
-            loading={isRolesLoading}
-          >
-            {roles.map(role => (
-              <Select.Option key={role.id} value={role.name}>
-                {role.name}
-              </Select.Option>
-            ))}
-          </Select>
+          {isPermissionsLoading ? (
+            <Spin size="small" />
+          ) : (
+            <Checkbox.Group style={{ width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {permissionGroups?.map((group: any) => (
+                  <div key={group.module}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1890ff' }}>{group.module}</div>
+                    <Row gutter={[8, 8]}>
+                      {group.permissions.map((p: any) => (
+                        <Col span={12} key={p.name}>
+                          <Checkbox value={p.name}>{p.name}</Checkbox>
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                ))}
+              </div>
+            </Checkbox.Group>
+          )}
         </Form.Item>
       </Form>
     </Modal>

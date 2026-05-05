@@ -37,7 +37,7 @@ class StoreUserRequest extends FormRequest
             ],
             'email' => 'nullable|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role_id' => $this->roleRule($companyId),
+            'permissions' => $this->permissionsRule(),
             'clinic_id' => [
                 'nullable',
                 'integer',

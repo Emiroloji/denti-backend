@@ -17,14 +17,13 @@ trait UserValidationRules
     }
 
     /**
-     * Role validation rule with company constraint.
+     * Permissions validation rule.
      */
-    protected function roleRule(?int $companyId): array
+    protected function permissionsRule(): array
     {
         return [
-            'required',
-            'integer',
-            Rule::exists('roles', 'id'),
+            'nullable',
+            'array',
         ];
     }
 }

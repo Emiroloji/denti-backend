@@ -110,19 +110,38 @@ class StockRequestService
         });
     }
 
-    public function completeRequest(int $requestId, string $performedBy): bool
+    public function shipRequest(int $requestId, string $performedBy): bool
     {
         $request = $this->stockRequestRepository->find($requestId);
         if (!$request || $request->status !== 'approved') {
             throw new \Exception('Talep bulunamadı veya onaylanmamış');
         }
 
-        // 🔒 GÜVENLİK: Sadece ürünü GÖNDEREN klinik transferi tamamlayabilir.
+        // GÜVENLİK: Sadece ürünü GÖNDEREN klinik transferi başlatabilir.
+        $user = Auth::user();
+        if ($request->requested_from_clinic_id !== $user->clinic_id && !$user->hasRole('Super Admin')) {
+            throw new AuthorizationException('Bu işlemi sadece ürünü gönderen klinik başlatabilir.');
+        }
+
+        return (bool) $this->stockRequestRepository->update($requestId, [
+            'status' => 'in_transit',
+            'updated_at' => now()
+        ]);
+    }
+
+    public function completeRequest(int $requestId, string $performedBy): bool
+    {
+        $request = $this->stockRequestRepository->find($requestId);
+        if (!$request || $request->status !== 'in_transit') {
+            throw new \Exception('Talep bulunamadı veya transfer sürecinde değil');
+        }
+
+        // 🔒 GÜVENLİK: Sadece ürünü ALAN klinik transferi tamamlayabilir.
         $user = Auth::user();
         $isSuperAdmin = $user->hasRole('Super Admin');
 
-        if (!$isSuperAdmin && $request->requested_from_clinic_id !== $user->clinic_id) {
-            throw new AuthorizationException('Bu işlemi sadece ürünü gönderen klinik tamamlayabilir.');
+        if (!$isSuperAdmin && $request->requester_clinic_id !== $user->clinic_id) {
+            throw new AuthorizationException('Bu işlemi sadece ürünü teslim alan klinik tamamlayabilir.');
         }
 
         if (!$isSuperAdmin && !$user->hasAnyRole(['Company Owner', 'Stock Manager', 'Clinic Manager', 'Admin'])) {

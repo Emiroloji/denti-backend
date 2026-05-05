@@ -40,23 +40,24 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
     ];
 
     return (
-        <Card style={{ marginBottom: 24 }}>
+        <Card style={{ marginBottom: 24 }} className="premium-card">
             <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} md={5}>
+                <Col xs={24} md={6} lg={5}>
                     <Search
-                        placeholder="Stok adı ile ara..."
+                        placeholder="Stok adı veya SKU..."
                         onSearch={onSearch}
                         style={{ width: "100%" }}
                         allowClear
                     />
                 </Col>
 
-                <Col xs={12} md={4}>
+                <Col xs={12} md={6} lg={4}>
                     <Select
-                        placeholder="Klinik Seçin"
+                        placeholder="Klinik Filtresi"
                         style={{ width: "100%" }}
                         allowClear
                         loading={isClinicsLoading}
+                        popupMatchSelectWidth={false}
                         onChange={(value) => onFilterChange("clinic_id", value)}
                     >
                         {(clinics ?? []).map((clinic) => (
@@ -67,12 +68,13 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
                     </Select>
                 </Col>
 
-                <Col xs={12} md={3}>
+                <Col xs={12} md={4} lg={3}>
                     <Select
                         placeholder="Kategori"
                         style={{ width: "100%" }}
                         allowClear
                         loading={isCategoriesLoading}
+                        popupMatchSelectWidth={false}
                         onChange={(value) => onFilterChange("category", value)}
                     >
                         {(categories ?? []).map((option: any) => (
@@ -83,11 +85,12 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
                     </Select>
                 </Col>
 
-                <Col xs={12} md={3}>
+                <Col xs={12} md={4} lg={3}>
                     <Select
                         placeholder="Seviye"
                         style={{ width: "100%" }}
                         allowClear
+                        popupMatchSelectWidth={false}
                         onChange={(value) => onFilterChange("level", value)}
                     >
                         {levelOptions.map((option: any) => (
@@ -98,42 +101,28 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
                     </Select>
                 </Col>
 
-                <Col xs={12} md={3}>
+                <Col xs={12} md={4} lg={3}>
                     <Select
                         placeholder="Durum"
                         style={{ width: "100%" }}
                         allowClear
+                        popupMatchSelectWidth={false}
                         onChange={(value) => onFilterChange("status", value)}
                     >
                         <Option value="active">Aktif</Option>
                         <Option value="inactive">Pasif</Option>
-                        <Option value="expired">Süresi Geçmiş</Option>
                     </Select>
                 </Col>
 
-                <Col xs={24} md={6} style={{ textAlign: "right" }}>
-                    <Space>
-                        <Button
-                            icon={<TagsOutlined />}
-                            onClick={() => router.visit("/stock-categories")}
-                        >
-                            Kategoriler
-                        </Button>
-                        {/* <Button
-              icon={<BarcodeOutlined />}
-              onClick={onScannerOpen}
-              style={{ backgroundColor: '#f0f5ff', color: '#1d39c4', borderColor: '#adc6ff' }}
-            >
-              Barkodla Kullanım
-            </Button> */}
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={onAdd}
-                        >
-                            Yeni Stok
-                        </Button>
-                    </Space>
+                <Col xs={24} md={24} lg={5} style={{ textAlign: "right" }}>
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={onAdd}
+                        style={{ width: '100%', maxWidth: '160px' }}
+                    >
+                        Yeni Stok
+                    </Button>
                 </Col>
             </Row>
         </Card>

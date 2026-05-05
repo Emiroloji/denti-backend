@@ -139,6 +139,7 @@ class StockRequestRepository implements StockRequestRepositoryInterface
             'total' => $this->model->count(),
             'pending' => $this->model->where('status', 'pending')->count(),
             'approved' => $this->model->where('status', 'approved')->count(),
+            'in_transit' => $this->model->where('status', 'in_transit')->count(),
             'completed' => $this->model->where('status', 'completed')->count(),
             'rejected' => $this->model->where('status', 'rejected')->count(),
         ];

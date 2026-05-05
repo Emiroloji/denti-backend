@@ -36,7 +36,7 @@ class UserController extends Controller
         }
 
         $perPage = $request->get('per_page', 15);
-        $users = $query->with(['roles', 'clinic'])->paginate($perPage);
+        $users = $query->with(['permissions', 'clinic'])->paginate($perPage);
 
         return $this->success($users, 'Users retrieved successfully.');
     }
@@ -59,18 +59,12 @@ class UserController extends Controller
             'is_active' => true,
         ]);
 
-        // Rol atama (Global rolleri de destekle)
-        $role = Role::withoutGlobalScopes()
-            ->where(function($q) use ($companyId) {
-                $q->where('company_id', $companyId)->orWhereNull('company_id');
-            })
-            ->find($request->role_id);
-
-        if ($role) {
-            $user->assignRole($role->name);
+        // Yetki atama (Eğer permission dizisi geldiyse)
+        if ($request->has('permissions') && is_array($request->permissions)) {
+            $user->syncPermissions($request->permissions);
         }
 
-        return $this->success($user->load('roles'), 'User created successfully.', 201);
+        return $this->success($user->load('permissions'), 'User created successfully.', 201);
     }
 
     /**
@@ -81,7 +75,7 @@ class UserController extends Controller
         $companyId = Auth::user()->company_id;
 
         $user = User::where('company_id', $companyId)
-            ->with('roles')
+            ->with('permissions')
             ->find($id);
 
         if (!$user) {
@@ -117,20 +111,14 @@ class UserController extends Controller
         // Update user details
         $user->update($request->only(['name', 'is_active', 'clinic_id']));
 
-        // Sync roles (Global rolleri de destekle)
-        $companyId = $user->company_id;
-        $role = Role::withoutGlobalScopes()
-            ->where(function($q) use ($companyId) {
-                $q->where('company_id', $companyId)->orWhereNull('company_id');
-            })
-            ->where('id', $request->role_id)
-            ->first();
-
-        if ($role) {
-            $user->syncRoles([$role->name]);
+        // Yetkileri Güncelle
+        if ($request->has('permissions') && is_array($request->permissions)) {
+            // Eğer bir Super Admin değilse ve bazı özel yetkileri kendisinde yoksa,
+            // atayabileceği yetkileri sınırlayabiliriz ancak şu an için basit tutalım.
+            $user->syncPermissions($request->permissions);
         }
 
-        return $this->success($user->load('roles'), 'User updated successfully.');
+        return $this->success($user->load('permissions'), 'User updated successfully.');
     }
 
     /**

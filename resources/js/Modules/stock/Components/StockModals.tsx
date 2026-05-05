@@ -206,7 +206,7 @@ export const StockModals: React.FC<StockModalsProps> = ({
           onFinish={onUseSubmit}
           initialValues={{
             performed_by: user?.name || '',
-            reason: 'treatment'
+            reason: 'usage'
           }}
         >
           <Alert
@@ -259,16 +259,16 @@ export const StockModals: React.FC<StockModalsProps> = ({
           </Form.Item>
 
           <Form.Item
-            label="Kullanım Sebebi"
+            label="Çıkış Sebebi"
             name="reason"
-            rules={[{ required: true, message: 'Kullanım sebebi gereklidir!' }]}
+            rules={[{ required: true, message: 'Çıkış sebebi gereklidir!' }]}
           >
             <Select placeholder="Sebep seçin">
-              <Option value="treatment">Tedavi</Option>
-              <Option value="surgery">Cerrahi</Option>
-              <Option value="cleaning">Temizlik</Option>
-              <Option value="maintenance">Bakım</Option>
-              <Option value="other">Diğer</Option>
+              <Option value="usage">Kullanım</Option>
+              <Option value="transfer">Transfer</Option>
+              <Option value="exchange">Değişim</Option>
+              <Option value="return">İade</Option>
+              <Option value="expired">Süresi Geçmiş</Option>
             </Select>
           </Form.Item>
 

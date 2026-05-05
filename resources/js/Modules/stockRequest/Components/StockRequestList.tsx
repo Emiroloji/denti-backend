@@ -25,7 +25,8 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  CarOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useStockRequests, useStockRequestStats } from '../Hooks/useStockRequests'
@@ -118,6 +119,12 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
       color: '#ff4d4f'
     },
     {
+      title: 'Transferde',
+      value: stats?.in_transit || 0,
+      icon: <CarOutlined />,
+      color: '#13c2c2'
+    },
+    {
       title: 'Tamamlanan',
       value: stats?.completed || 0,
       icon: <DownloadOutlined />,
@@ -131,7 +138,7 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
       {stats && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
           {statsCards.map((stat, index) => (
-            <Col xs={12} sm={6} key={index}>
+            <Col flex="1" key={index} style={{ minWidth: '150px' }}>
               <Card size="small">
                 <Statistic
                   title={stat.title}
@@ -200,6 +207,9 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
               </Option>
               <Option value="approved">
                 <Badge status="processing" text="Onaylanan" />
+              </Option>
+              <Option value="in_transit">
+                <Badge status="processing" color="cyan" text="Transferde" />
               </Option>
               <Option value="rejected">
                 <Badge status="error" text="Reddedilen" />

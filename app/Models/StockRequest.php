@@ -60,6 +60,11 @@ class StockRequest extends Model
         return $query->where('status', 'approved');
     }
 
+    public function scopeInTransit($query)
+    {
+        return $query->where('status', 'in_transit');
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
@@ -76,6 +81,7 @@ class StockRequest extends Model
         return match($this->status) {
             'pending' => 'orange',
             'approved' => 'blue',
+            'in_transit' => 'cyan',
             'completed' => 'green',
             'rejected' => 'red',
             'cancelled' => 'gray',

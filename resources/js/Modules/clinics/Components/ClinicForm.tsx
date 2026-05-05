@@ -53,7 +53,6 @@ export const ClinicForm: React.FC<ClinicFormProps> = ({
         description: clinic.description,
         phone: clinic.phone,
         email: clinic.email,
-        manager_name: clinic.manager_name,
         website: clinic.website,
         city: clinic.city,
         district: clinic.district,
@@ -182,22 +181,6 @@ export const ClinicForm: React.FC<ClinicFormProps> = ({
       </Row>
 
       <Row gutter={16}>
-        <Col xs={24} sm={12}>
-          <Form.Item
-            label="Yönetici Adı"
-            name="manager_name"
-            rules={[
-              { max: 255, message: 'Yönetici adı en fazla 255 karakter olabilir!' }
-            ]}
-          >
-            <Input 
-              prefix={<UserOutlined />}
-              placeholder="Yönetici adı ve soyadı"
-              size="large"
-            />
-          </Form.Item>
-        </Col>
-
         <Col xs={24} sm={12}>
           <Form.Item
             label="Website"

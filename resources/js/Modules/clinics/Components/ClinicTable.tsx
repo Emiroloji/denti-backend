@@ -72,11 +72,6 @@ export const ClinicTable: React.FC<ClinicTableProps> = ({
               <MailOutlined /> {record.email}
             </div>
           )}
-          {record.manager_name && (
-            <div style={{ fontSize: '12px' }}>
-              <UserOutlined /> {record.manager_name}
-            </div>
-          )}
         </div>
       ),
     },

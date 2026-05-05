@@ -306,43 +306,72 @@ class StockService
 
     public function getStockStats(int $companyId, int $clinicId = null): array
     {
-        $cacheKey  = "stock_stats_{$companyId}_" . ($clinicId ?? 'all');
-
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function () use ($clinicId, $companyId) {
-            try {
-                $baseQuery = $this->stockRepository->getBaseQuery();
-                if ($clinicId) $baseQuery->where('clinic_id', $clinicId);
-
-                $nearExpiryLimit = now()->addDays(30)->toDateTimeString();
-                $now             = now()->toDateTimeString();
-
-                $totalUnitsRaw = Stock::totalBaseUnitsRaw();
-                $stats = $baseQuery->join('products', 'stocks.product_id', '=', 'products.id')
-                    ->selectRaw("
-                        COUNT(DISTINCT stocks.product_id) as total_items,
-                        COUNT(DISTINCT CASE WHEN stocks.is_active = 1
-                            AND {$totalUnitsRaw} <= COALESCE(products.red_alert_level, products.critical_stock_level)
-                            THEN stocks.product_id END) as critical_stock_items,
-                        COUNT(DISTINCT CASE WHEN stocks.is_active = 1
-                            AND {$totalUnitsRaw} <= COALESCE(products.yellow_alert_level, products.min_stock_level)
-                            AND {$totalUnitsRaw} > COALESCE(products.red_alert_level, products.critical_stock_level)
-                            THEN stocks.product_id END) as low_stock_items,
-                        COUNT(DISTINCT CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 AND stocks.expiry_date <= ? AND stocks.expiry_date > ? THEN stocks.product_id END) as expiring_items,
-                        SUM(stocks.purchase_price * stocks.current_stock) as total_value
-                    ", [$nearExpiryLimit, $now])->first();
-
-                return [
-                    'total_items'          => (int) ($stats->total_items          ?? 0),
-                    'low_stock_items'      => (int) ($stats->low_stock_items      ?? 0),
-                    'critical_stock_items' => (int) ($stats->critical_stock_items ?? 0),
-                    'expiring_items'       => (int) ($stats->expiring_items       ?? 0),
-                    'total_value'          => round((float) ($stats->total_value  ?? 0), 2)
-                ];
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Stock Stats Error: ' . $e->getMessage(), ['company_id' => $companyId]);
-                return ['total_items' => 0, 'low_stock_items' => 0, 'critical_stock_items' => 0, 'expiring_items' => 0, 'total_value' => 0];
+        try {
+            $baseQuery = Stock::query();
+            if ($clinicId) {
+                $baseQuery->where('clinic_id', $clinicId);
+            } else {
+                $baseQuery->where('stocks.company_id', $companyId);
             }
-        });
+
+            $now = now()->toDateTimeString();
+            $totalUnitsRaw = Stock::totalBaseUnitsRaw();
+            $isSqlite = DB::getDriverName() === 'sqlite';
+
+            // SQLite ve MySQL için farklı tarih fonksiyonları
+            $redDaysSql = $isSqlite 
+                ? "date(?, '+' || COALESCE(stocks.expiry_red_days, 15) || ' days')"
+                : "DATE_ADD(?, INTERVAL COALESCE(stocks.expiry_red_days, 15) DAY)";
+            
+            $yellowDaysSql = $isSqlite
+                ? "date(?, '+' || COALESCE(stocks.expiry_yellow_days, 30) || ' days')"
+                : "DATE_ADD(?, INTERVAL COALESCE(stocks.expiry_yellow_days, 30) DAY)";
+
+            $stats = $baseQuery->join('products', 'stocks.product_id', '=', 'products.id')
+                ->selectRaw("
+                    COUNT(DISTINCT stocks.product_id) as total_items,
+                    
+                    -- Stok Seviyesi Uyarıları
+                    COUNT(DISTINCT CASE WHEN stocks.is_active = 1
+                        AND {$totalUnitsRaw} <= COALESCE(products.red_alert_level, products.critical_stock_level)
+                        THEN stocks.product_id END) as critical_stock_items,
+                    COUNT(DISTINCT CASE WHEN stocks.is_active = 1
+                        AND {$totalUnitsRaw} <= COALESCE(products.yellow_alert_level, products.min_stock_level)
+                        AND {$totalUnitsRaw} > COALESCE(products.red_alert_level, products.critical_stock_level)
+                        THEN stocks.product_id END) as low_stock_items,
+                    
+                    -- Miyat (SKT) Uyarıları
+                    COUNT(DISTINCT CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 
+                        AND (stocks.expiry_date <= {$redDaysSql})
+                        THEN stocks.product_id END) as critical_expiring_items,
+                        
+                    COUNT(DISTINCT CASE WHEN stocks.is_active = 1 AND stocks.track_expiry = 1 
+                        AND (stocks.expiry_date <= {$yellowDaysSql})
+                        AND (stocks.expiry_date > {$redDaysSql})
+                        THEN stocks.product_id END) as low_expiring_items,
+
+                    SUM(stocks.purchase_price * stocks.current_stock) as total_value
+                ", [$now, $now, $now])->first();
+
+            return [
+                'total_items'             => (int) ($stats->total_items             ?? 0),
+                'low_stock_items'         => (int) ($stats->low_stock_items         ?? 0),
+                'critical_stock_items'    => (int) ($stats->critical_stock_items    ?? 0),
+                'low_expiring_items'      => (int) ($stats->low_expiring_items      ?? 0),
+                'critical_expiring_items' => (int) ($stats->critical_expiring_items ?? 0),
+                'total_value'             => round((float) ($stats->total_value     ?? 0), 2)
+            ];
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Stock Stats Error: ' . $e->getMessage(), ['company_id' => $companyId]);
+            return [
+                'total_items' => 0, 
+                'low_stock_items' => 0, 
+                'critical_stock_items' => 0, 
+                'low_expiring_items' => 0, 
+                'critical_expiring_items' => 0, 
+                'total_value' => 0
+            ];
+        }
     }
 
     public function getLowStockItems(int $clinicId = null): Collection

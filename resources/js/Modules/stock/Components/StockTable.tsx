@@ -195,7 +195,7 @@ export const StockTable: React.FC<StockTableProps> = ({
       }
     ] : [
         {
-            title: '📦 Partiler',
+            title: '📦 Stoklar',
             key: 'batches',
             width: 100,
             align: 'center' as const,
@@ -259,14 +259,14 @@ export const StockTable: React.FC<StockTableProps> = ({
     {/* Boş batch'leri göster/gizle switch'i (sadece batch mode'da) */}
     {isBatchMode && emptyBatchCount > 0 && (
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Text type="secondary">Boş partileri göster:</Text>
+        <Text type="secondary">Boş stokları göster:</Text>
         <Switch
           checked={showEmptyBatches}
           onChange={setShowEmptyBatches}
           size="small"
         />
         <Text type="secondary" style={{ fontSize: '12px' }}>
-          ({emptyBatchCount} tane boş parti gizlendi)
+          ({emptyBatchCount} tane boş stok kaydı gizlendi)
         </Text>
       </div>
     )}

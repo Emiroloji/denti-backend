@@ -201,17 +201,7 @@ export const ClinicDetail: React.FC<ClinicDetailProps> = ({
                     <a href={`mailto:${clinic.email}`}>{clinic.email}</a>
                   </Space>
                 </Descriptions.Item>
-              )}
-              
-              {clinic.manager_name && (
-                <Descriptions.Item label="Yönetici">
-                  <Space>
-                    <UserOutlined />
-                    {clinic.manager_name}
-                  </Space>
-                </Descriptions.Item>
-              )}
-              
+              )}     
               {clinic.website && (
                 <Descriptions.Item label="Website">
                   <Space>

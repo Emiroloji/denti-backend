@@ -44,6 +44,10 @@ export const stockRequestApi = {
   reject: (id: number, data: RejectStockRequestRequest): Promise<ApiResponse<StockRequest>> =>
     api.put(`/stock-requests/${id}/reject`, data),
 
+  // Transferi başlat (Yola çıkar)
+  ship: (id: number, data: CompleteStockRequestRequest): Promise<ApiResponse<StockRequest>> =>
+    api.put(`/stock-requests/${id}/ship`, data),
+
   // Transferi tamamla
   complete: (id: number, data: CompleteStockRequestRequest): Promise<ApiResponse<StockRequest>> =>
     api.put(`/stock-requests/${id}/complete`, data),

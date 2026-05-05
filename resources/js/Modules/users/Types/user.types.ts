@@ -1,6 +1,10 @@
 // src/modules/users/Types/user.types.ts
 
-import { Role } from '../../roles/Types/role.types';
+export interface Permission {
+  id: number;
+  name: string;
+}
+
 import { Clinic } from '../../clinics/Types/clinic.types';
 
 export interface User {
@@ -11,7 +15,7 @@ export interface User {
   clinic_id?: number;
   clinic?: Clinic;
   is_active: boolean;
-  roles: Role[];
+  permissions: Permission[];
   created_at: string;
   updated_at: string;
   email_verified_at?: string;
@@ -20,7 +24,7 @@ export interface User {
 export interface UpdateUserPayload {
   name: string;
   is_active: boolean;
-  roles: string[]; // Role names or IDs
+  permissions: string[]; // Permission names or IDs
   clinic_id?: number;
 }
 

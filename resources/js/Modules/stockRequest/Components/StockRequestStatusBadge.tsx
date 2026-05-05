@@ -6,7 +6,8 @@ import {
   ClockCircleOutlined, 
   CheckCircleOutlined, 
   CloseCircleOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  CarOutlined
 } from '@ant-design/icons'
 import { StockRequestStatus } from '../Types/stockRequest.types'
 
@@ -32,6 +33,12 @@ export const StockRequestStatusBadge: React.FC<StockRequestStatusBadgeProps> = (
           color: 'blue',
           icon: <CheckCircleOutlined />,
           text: 'Onaylandı'
+        }
+      case 'in_transit':
+        return {
+          color: 'cyan',
+          icon: <CarOutlined />,
+          text: 'Transferde'
         }
       case 'rejected':
         return {
