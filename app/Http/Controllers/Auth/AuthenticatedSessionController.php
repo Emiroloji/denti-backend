@@ -57,7 +57,16 @@ class AuthenticatedSessionController extends Controller
             }
 
             if ($user->company_id !== $company->id && !$user->hasRole('Super Admin')) {
-                return back()->withErrors(['username' => 'Bu klinik için yetkiniz bulunmuyor.']);
+                \Log::warning('Login yetki hatası', [
+                    'user_id' => $user->id,
+                    'user_company_id' => $user->company_id,
+                    'attempted_company_id' => $company->id,
+                    'attempted_company_code' => $company->code,
+                    'username' => $user->username,
+                ]);
+                return back()->withErrors([
+                    'username' => "Bu klinik için yetkiniz bulunmuyor. (Kullanıcı şirket ID: {$user->company_id}, Klinik şirket ID: {$company->id})"
+                ]);
             }
         }
 

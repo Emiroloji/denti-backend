@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\ProductService;
 use App\Http\Resources\ProductResource;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +13,6 @@ use App\Http\Resources\StockTransactionResource;
 
 class ProductController extends Controller
 {
-    use JsonResponseTrait;
 
     public function __construct(
         protected ProductService $productService

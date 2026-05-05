@@ -7,7 +7,6 @@ use App\Http\Requests\Admin\StoreCompanyRequest;
 use App\Http\Requests\Admin\UpdateCompanyRequest;
 use App\Models\Company;
 use App\Models\User;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +14,6 @@ use Illuminate\Support\Str;
 
 class CompanyController extends Controller
 {
-    use JsonResponseTrait;
 
     /**
      * Display a listing of companies.

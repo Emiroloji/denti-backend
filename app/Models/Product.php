@@ -60,6 +60,10 @@ class Product extends Model
     // Accessors
     public function getTotalStockAttribute()
     {
+        if (!$this->relationLoaded('batches')) {
+            $this->load('batches');
+        }
+
         return $this->batches->sum(function($batch) {
             if (!$batch->has_sub_unit) {
                 return $batch->current_stock;
@@ -81,9 +85,13 @@ class Product extends Model
         return 'normal';
     }
 
-    // 🏦 Finansal Hesaplamalar
+    // 🏦 Finansal Hesaplamalar (Sadece ilişkiler yüklüyse hesapla)
     public function getTotalStockValueAttribute()
     {
+        if (!$this->relationLoaded('batches')) {
+            return 0;
+        }
+
         return $this->batches->sum(function($batch) {
             $totalUnits = $batch->has_sub_unit 
                 ? ($batch->current_stock * ($batch->sub_unit_multiplier ?? 1)) + $batch->current_sub_stock
@@ -123,9 +131,13 @@ class Product extends Model
 
     public function getLastPurchasePriceAttribute()
     {
-        $lastBatch = $this->batches()
+        if (!$this->relationLoaded('batches')) {
+            return 0;
+        }
+
+        $lastBatch = $this->batches
             ->where('current_stock', '>', 0)
-            ->orderByDesc('purchase_date')
+            ->sortByDesc('purchase_date')
             ->first();
         
         return $lastBatch ? $lastBatch->purchase_price : 0;
@@ -133,15 +145,11 @@ class Product extends Model
 
     public function getTotalInAttribute()
     {
-        return $this->stockTransactions()
-            ->whereIn('type', ['in', 'adjustment_in', 'return'])
-            ->sum('quantity');
+        return $this->attributes['total_in'] ?? 0;
     }
 
     public function getTotalOutAttribute()
     {
-        return $this->stockTransactions()
-            ->whereIn('type', ['out', 'usage', 'adjustment_out', 'waste'])
-            ->sum('quantity');
+        return $this->attributes['total_out'] ?? 0;
     }
 }

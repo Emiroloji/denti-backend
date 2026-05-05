@@ -6,13 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Models\Role;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
-    use JsonResponseTrait;
 
     /**
      * List all roles for the current user's company.

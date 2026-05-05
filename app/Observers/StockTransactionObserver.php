@@ -73,9 +73,6 @@ class StockTransactionObserver
             ]);
         }
 
-        // Trigger alert check for any stock change
-        app(\App\Services\StockAlertService::class)->checkAndCreateAlerts($stock);
-
         // Dispatch Event for real-time updates
         \App\Events\Stock\StockLevelChanged::dispatch($stock->fresh(), $stock->company_id, $stock->clinic_id);
     }

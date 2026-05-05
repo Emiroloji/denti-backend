@@ -39,13 +39,21 @@ class StockRequestController extends Controller
         
         $data = $request->all();
         
+        // Kullanıcının klinik ataması var mı kontrol et
+        if (is_null($user->clinic_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kullanıcıya atanmış bir klinik bulunmuyor. Lütfen yöneticinize başvurun.'
+            ], 403);
+        }
+
         // Auto-fill requester clinic if not provided
-        if (!isset($data['requester_clinic_id']) && $user->clinic_id) {
+        if (!isset($data['requester_clinic_id'])) {
             $data['requester_clinic_id'] = $user->clinic_id;
         }
 
         // Restrict requester clinic if user is not Super Admin
-        if ($user->clinic_id && isset($data['requester_clinic_id']) && $data['requester_clinic_id'] != $user->clinic_id) {
+        if (isset($data['requester_clinic_id']) && $data['requester_clinic_id'] != $user->clinic_id) {
             if (!$user->hasRole(\App\Models\User::ROLE_SUPER_ADMIN)) {
                 return response()->json([
                     'success' => false,

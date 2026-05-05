@@ -10,7 +10,14 @@ class ProductRepository
 {
     public function getAllWithFilters(array $filters = [], int $perPage = 50): LengthAwarePaginator
     {
-        $query = Product::query()->with(['batches', 'clinic']);
+        $query = Product::query()->with(['batches.clinic', 'clinic'])
+            ->withSum(['stockTransactions as total_in' => function($q) {
+                $q->whereIn('type', ['entry', 'adjustment_plus', 'adjustment_increase', 'purchase', 'transfer_in', 'returned', 'return_in']);
+            }], 'quantity')
+            ->withSum(['stockTransactions as total_out' => function($q) {
+                $q->whereIn('type', ['usage', 'loss', 'adjustment_minus', 'adjustment_decrease', 'transfer_out', 'expired', 'damaged', 'return_out']);
+            }], 'quantity');
+
         $isSqlite = \Illuminate\Support\Facades\DB::getDriverName() === 'sqlite';
         $now = now();
 
@@ -50,9 +57,6 @@ class ProductRepository
             
             // Stok Miktarı Bazlı Filtreler (Total Stock)
             if (in_array($level, ['low', 'critical'])) {
-                // Toplam stoğu hesaplamak için subquery kullanıyoruz
-                $query->withSum('batches', 'current_stock');
-                
                 if ($level === 'critical') {
                     $query->whereHas('batches', function($q) {
                         $q->where('is_active', 1);
@@ -91,7 +95,14 @@ class ProductRepository
 
     public function find(int $id): ?Product
     {
-        return Product::with(['batches.supplier', 'batches.clinic', 'clinic'])->find($id);
+        return Product::with(['batches.supplier', 'batches.clinic', 'clinic'])
+            ->withSum(['stockTransactions as total_in' => function($q) {
+                $q->whereIn('type', ['entry', 'adjustment_plus', 'adjustment_increase', 'purchase', 'transfer_in', 'returned', 'return_in']);
+            }], 'quantity')
+            ->withSum(['stockTransactions as total_out' => function($q) {
+                $q->whereIn('type', ['usage', 'loss', 'adjustment_minus', 'adjustment_decrease', 'transfer_out', 'expired', 'damaged', 'return_out']);
+            }], 'quantity')
+            ->find($id);
     }
 
     public function create(array $data): Product

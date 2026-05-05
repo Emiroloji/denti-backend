@@ -306,6 +306,15 @@ class StockService
 
     public function getStockStats(int $companyId, int $clinicId = null): array
     {
+        $cacheKey = "stock_stats_{$companyId}_" . ($clinicId ?? 'all');
+        
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 900, function () use ($companyId, $clinicId) {
+            return $this->calculateStockStats($companyId, $clinicId);
+        });
+    }
+
+    protected function calculateStockStats(int $companyId, int $clinicId = null): array
+    {
         try {
             $baseQuery = Stock::query();
             if ($clinicId) {
@@ -392,7 +401,7 @@ class StockService
     public function getStockTransactions(int $stockId, array $filters = []): mixed
     {
         $query = \App\Models\StockTransaction::where('stock_id', $stockId)
-            ->with(['user', 'clinic'])
+            ->with(['user', 'clinic', 'stock.product'])
             ->orderByDesc('transaction_date');
 
         // Type filter

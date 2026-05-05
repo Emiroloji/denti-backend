@@ -97,7 +97,8 @@ class User extends Authenticatable
     {
         static $isSuperAdmin = null;
         if ($isSuperAdmin === null) {
-            $isSuperAdmin = $this->hasRole(self::ROLE_SUPER_ADMIN);
+            // 🛡️ TenantScope döngüsünü kırmak için rollerini scope olmadan kontrol et
+            $isSuperAdmin = $this->roles()->withoutGlobalScopes()->where('name', self::ROLE_SUPER_ADMIN)->exists();
         }
         return $isSuperAdmin;
     }

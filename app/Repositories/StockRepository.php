@@ -134,7 +134,7 @@ class StockRepository implements StockRepositoryInterface
 
     public function getLowStockItems(int $clinicId = null): Collection
     {
-        $query = $this->model->lowStock()->with(['supplier', 'clinic']);
+        $query = $this->model->lowStock()->with(['supplier', 'clinic', 'product']);
 
         if ($clinicId) {
             $query->where('clinic_id', $clinicId);
@@ -145,7 +145,7 @@ class StockRepository implements StockRepositoryInterface
 
     public function getCriticalStockItems(int $clinicId = null): Collection
     {
-        $query = $this->model->criticalStock()->with(['supplier', 'clinic']);
+        $query = $this->model->criticalStock()->with(['supplier', 'clinic', 'product']);
 
         if ($clinicId) {
             $query->where('clinic_id', $clinicId);
@@ -156,7 +156,7 @@ class StockRepository implements StockRepositoryInterface
 
     public function getExpiringItems(int $days = 30, int $clinicId = null): Collection
     {
-        $query = $this->model->nearExpiry($days)->with(['supplier', 'clinic']);
+        $query = $this->model->nearExpiry($days)->with(['supplier', 'clinic', 'product']);
 
         if ($clinicId) {
             $query->where('clinic_id', $clinicId);
@@ -167,7 +167,7 @@ class StockRepository implements StockRepositoryInterface
 
     public function getExpiredItems(int $clinicId = null): Collection
     {
-        $query = $this->model->expired()->with(['supplier', 'clinic']);
+        $query = $this->model->expired()->with(['supplier', 'clinic', 'product']);
 
         if ($clinicId) {
             $query->where('clinic_id', $clinicId);
@@ -209,6 +209,6 @@ class StockRepository implements StockRepositoryInterface
         $stock = $this->find($stockId);
         if (!$stock) return new Collection();
 
-        return $stock->transactions()->orderBy('transaction_date', 'desc')->get();
+        return $stock->transactions()->with(['user', 'clinic'])->orderBy('transaction_date', 'desc')->get();
     }
 }

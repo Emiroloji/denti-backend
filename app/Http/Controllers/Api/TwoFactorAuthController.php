@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\Confirm2FARequest;
 use App\Http\Requests\Auth\Verify2FARequest;
 use App\Services\TwoFactorService;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +13,6 @@ use Illuminate\Support\Facades\Log;
 
 class TwoFactorAuthController extends Controller
 {
-    use JsonResponseTrait;
 
     protected $twoFactorService;
 

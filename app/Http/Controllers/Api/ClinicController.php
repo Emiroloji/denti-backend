@@ -11,13 +11,11 @@ use App\Http\Controllers\Controller;
 use App\Services\ClinicService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 class ClinicController extends Controller
 {
-    use JsonResponseTrait;
     protected $clinicService;
 
     public function __construct(ClinicService $clinicService)

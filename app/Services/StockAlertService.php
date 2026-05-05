@@ -91,7 +91,10 @@ class StockAlertService
 
         // 🛡️ ÜRÜN BAZLI SON KULLANMA TARİHİ KONTROLÜ
         // Tüm aktif batch'leri kontrol et, en kritik durumu tek uyarı olarak üret
-        $allBatches = $product->batches()->where('is_active', true)->where('track_expiry', true)->whereNotNull('expiry_date')->get();
+        // Eager load edilmiş batches koleksiyonunu kullan (yeni DB sorgusu yapmamak için)
+        $allBatches = $product->batches->filter(function ($batch) {
+            return $batch->is_active && $batch->track_expiry && $batch->expiry_date !== null;
+        });
         
         if ($allBatches->isNotEmpty()) {
             $today = now();
@@ -157,12 +160,7 @@ class StockAlertService
             'is_resolved' => false
         ]);
 
-        $alert = $this->stockAlertRepository->create($alertData);
-
-        // Bildirim gönder
-        $this->sendAlertNotification($alert);
-
-        return $alert;
+        return $this->stockAlertRepository->create($alertData);
     }
 
     public function resolveExistingAlerts(Stock $stock): void
@@ -226,18 +224,18 @@ class StockAlertService
 
     /**
      * Tüm stokları tarayıp eksik uyarıları oluşturur.
+     * Chunk kullanarak bellek verimliliği sağlar.
      */
     public function syncAlerts(int $clinicId = null): int
     {
-        $query = Stock::query();
+        $query = Stock::with(['product.batches']);
         if ($clinicId) {
             $query->where('clinic_id', $clinicId);
         }
 
-        $stocks = $query->get();
         $count = 0;
 
-        foreach ($stocks as $stock) {
+        foreach ($query->cursor() as $stock) {
             $this->checkAndCreateAlerts($stock);
             $count++;
         }

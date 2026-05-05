@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('companies', function (Blueprint $table) {
             if (!Schema::hasColumn('companies', 'alert_emails')) {
-                $table->text('alert_emails')->nullable()->after('is_active')
+                $table->text('alert_emails')->nullable()->after('status')
                     ->comment('Virgülle ayrılmış e-posta adresleri (bilgilendirme için)');
             }
         });

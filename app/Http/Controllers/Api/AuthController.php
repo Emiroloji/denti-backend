@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +15,6 @@ use App\Models\Company;
 
 class AuthController extends Controller
 {
-    use JsonResponseTrait;
 
     private function throttleKey(LoginRequest $request): string
     {

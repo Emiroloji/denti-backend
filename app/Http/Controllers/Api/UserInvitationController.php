@@ -8,7 +8,6 @@ use App\Http\Requests\StoreInvitationRequest;
 use App\Mail\UserInvitationMail;
 use App\Models\User;
 use App\Models\UserInvitation;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +17,6 @@ use Illuminate\Support\Str;
 
 class UserInvitationController extends Controller
 {
-    use JsonResponseTrait;
 
     /**
      * Invite a new user to the company.

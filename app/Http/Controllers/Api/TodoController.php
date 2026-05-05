@@ -6,13 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Services\TodoService;
 use App\Http\Requests\StoreTodoRequest;
 use App\Http\Requests\UpdateTodoRequest;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TodoController extends Controller
 {
-    use JsonResponseTrait;
 
     protected $todoService;
 

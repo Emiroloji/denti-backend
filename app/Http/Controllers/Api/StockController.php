@@ -12,7 +12,6 @@ use App\Http\Requests\AdjustStockRequest;
 use App\Http\Requests\UseStockRequest;
 use App\Exceptions\Stock\StockNotFoundException;
 use App\Exceptions\Stock\InsufficientStockException;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +22,6 @@ use App\Models\Stock;
 
 class StockController extends Controller
 {
-    use JsonResponseTrait;
 
     protected $stockService;
 

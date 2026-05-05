@@ -10,6 +10,7 @@ namespace App\Services;
 use App\Repositories\Interfaces\ClinicRepositoryInterface;
 use App\Models\Clinic;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class ClinicService
 {
@@ -22,7 +23,9 @@ class ClinicService
 
     public function getAllClinics()
     {
-        return $this->clinicRepository->all();
+        return Cache::remember('all_clinics', 300, function () {
+            return $this->clinicRepository->all();
+        });
     }
 
     public function getAllWithFilters(array $filters)

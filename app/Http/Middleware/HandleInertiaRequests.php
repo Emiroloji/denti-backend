@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Cache;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,18 +36,20 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'username' => $request->user()->username,
-                    'email' => $request->user()->email,
-                    'company_id' => $request->user()->company_id,
-                    'clinic_id' => $request->user()->clinic_id,
-                    'roles' => $request->user()->getRoleNames(),
-                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'company_id' => $user->company_id,
+                    'clinic_id' => $user->clinic_id,
+                    'roles' => Cache::remember("user_roles_{$user->id}", 60, fn() => $user->getRoleNames()),
+                    'permissions' => Cache::remember("user_perms_{$user->id}", 60, fn() => $user->getAllPermissions()->pluck('name')),
                 ] : null,
             ],
             'flash' => [

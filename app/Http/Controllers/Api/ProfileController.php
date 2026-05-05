@@ -5,13 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileInfoRequest;
 use App\Http\Requests\UpdateProfilePasswordRequest;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
-    use JsonResponseTrait;
 
     /**
      * Update the user's profile information.

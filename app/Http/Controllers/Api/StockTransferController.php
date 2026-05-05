@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class StockTransferController extends Controller
 {
-    use JsonResponseTrait;
 
     /**
      * Transfer listesi (şirket bazlı)
@@ -76,6 +75,16 @@ class StockTransferController extends Controller
 
         // Yetki kontrolü: Kaynak klinikte stok görme yetkisi
         if ($stock->clinic_id !== $user->clinic_id && !$user->hasPermissionTo('transfer-stocks')) {
+            \Log::warning('Transfer yetki hatası', [
+                'user_id' => $user->id,
+                'user_clinic_id' => $user->clinic_id,
+                'stock_clinic_id' => $stock->clinic_id,
+                'stock_id' => $stock->id,
+                'has_transfer_permission' => $user->hasPermissionTo('transfer-stocks'),
+            ]);
+            if (is_null($user->clinic_id)) {
+                return $this->error('Kullanıcıya atanmış bir klinik bulunmuyor. Lütfen yöneticinize başvurun.', 403);
+            }
             return $this->error('Bu stok için transfer yetkiniz yok.', 403);
         }
 
@@ -164,6 +173,9 @@ class StockTransferController extends Controller
 
         // Yetki kontrolü: Hedef klinik yetkilisi mi?
         if ($transfer->to_clinic_id !== $user->clinic_id && !$user->hasPermissionTo('approve-transfers')) {
+            if (is_null($user->clinic_id)) {
+                return $this->error('Kullanıcıya atanmış bir klinik bulunmuyor. Lütfen yöneticinize başvurun.', 403);
+            }
             return $this->error('Bu transferi onaylama yetkiniz yok.', 403);
         }
 
@@ -263,6 +275,9 @@ class StockTransferController extends Controller
 
         // Yetki kontrolü
         if ($transfer->to_clinic_id !== $user->clinic_id && !$user->hasPermissionTo('approve-transfers')) {
+            if (is_null($user->clinic_id)) {
+                return $this->error('Kullanıcıya atanmış bir klinik bulunmuyor. Lütfen yöneticinize başvurun.', 403);
+            }
             return $this->error('Bu transferi reddetme yetkiniz yok.', 403);
         }
 

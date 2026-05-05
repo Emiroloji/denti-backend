@@ -7,13 +7,11 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Models\User;
 use App\Models\Role;
-use App\Traits\JsonResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    use JsonResponseTrait;
 
     public function index(\Illuminate\Http\Request $request): JsonResponse
     {
