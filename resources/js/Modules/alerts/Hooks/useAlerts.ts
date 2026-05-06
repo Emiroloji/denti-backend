@@ -29,18 +29,18 @@ export const useAlerts = (filters?: AlertFilters) => {
         )
       }));
     },
-    enabled: true,
+    enabled,
     staleTime: 60 * 1000, // 1 dakika
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchInterval: (query) => {
-      // 🔥 Kritik uyarı varsa 15s, yoksa 2dk'de bir kontrol et
+      // Kritik uyarı varsa 45s, yoksa 3 dk — sık polling API ve DB yükünü artırıyordu
       const data = query.state.data?.data as any[] | undefined
       const hasCritical = data?.some((a: any) => a.severity === 'critical' || a.type === 'critical_stock' || a.type === 'expired')
-      return hasCritical ? 15000 : 120000
+      return hasCritical ? 45000 : 180000
     },
     refetchIntervalInBackground: false,
-    retry: 1,
+    retry: false,
   })
 
   const createMutation = useMutation({
@@ -166,29 +166,29 @@ export const useActiveAlerts = (clinicId?: number) => {
         )
       }));
     },
-    enabled: true,
+    enabled,
     staleTime: 1 * 60 * 1000, // 1 dakika
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchInterval: 30000, // 30 saniyede bir
+    refetchInterval: 120000, // 2 dakikada bir (önceden 30s — gereksiz yük)
     refetchIntervalInBackground: false,
-    retry: 1,
+    retry: false,
   })
 }
 
 // Bekleyen uyarı sayısı için hook - EN ÖNEMLİSİ!
-export const usePendingAlertCount = (clinicId?: number) => {
+export const usePendingAlertCount = (clinicId?: number, enabled = true) => {
   return useQuery({
     queryKey: ['alerts', 'pending', 'count', clinicId],
     queryFn: () => alertApi.getPendingCount(clinicId),
     select: (data) => data.data.count,
-    enabled: true,
-    staleTime: 1 * 60 * 1000, // 1 dakika
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchInterval: 30000, // 30 saniyede bir çek
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 dakika cache'ten oku
+    refetchOnWindowFocus: false, // Sayfaya dönünce tekrar çekme
+    refetchOnMount: false, // Modül değiştirince tekrar çekme
+    refetchInterval: 300000, // 5 dakikada bir (badge sayısı için yeterli)
     refetchIntervalInBackground: false,
-    retry: 3,
+    retry: false,
   })
 }
 
@@ -198,13 +198,13 @@ export const useAlertStats = (clinicId?: number) => {
     queryKey: ['alertStats', clinicId],
     queryFn: () => alertApi.getStats(clinicId),
     select: (data) => data.data,
-    enabled: true,
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 dakika
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchInterval: 60000, // 1 dakikada bir yenile
+    refetchInterval: 180000, // 3 dakikada bir
     refetchIntervalInBackground: false,
-    retry: 1,
+    retry: false,
   })
 }
 
@@ -216,11 +216,11 @@ export const useAlertSettings = () => {
     queryKey: ['alertSettings'],
     queryFn: alertApi.getSettings,
     select: (data) => data.data,
-    enabled: true,
+    enabled,
     staleTime: 10 * 60 * 1000, // 10 dakika
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    retry: 1,
+    retry: false,
   })
 
   const updateMutation = useMutation({

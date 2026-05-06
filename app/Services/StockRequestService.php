@@ -33,9 +33,9 @@ class StockRequestService
         return $this->stockRequestRepository->all();
     }
 
-    public function getAllWithFilters(array $filters)
+    public function getAllWithFilters(array $filters, int $perPage = 15)
     {
-        return $this->stockRequestRepository->getAllWithFilters($filters);
+        return $this->stockRequestRepository->getAllWithFilters($filters, $perPage);
     }
 
     // ✅ EKSİK METOD EKLENDİ

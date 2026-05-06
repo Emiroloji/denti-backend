@@ -12,7 +12,6 @@ use App\Models\StockAlert;
 use App\Models\StockTransaction;
 use App\Observers\StockAlertObserver;
 use App\Observers\StockTransactionObserver;
-
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AppServiceProvider extends ServiceProvider
@@ -74,7 +73,6 @@ class AppServiceProvider extends ServiceProvider
         JsonResource::withoutWrapping();
 
         // 🛡️ CRITICAL FIX: StockTransaction Observer'ı register et
-        // Bu olmadan stok kullanımı sonrası stok miktarı güncellenmiyordu!
         StockTransaction::observe(StockTransactionObserver::class);
         
         // 📧 StockAlert Observer - Mail bildirimleri için
@@ -87,10 +85,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(\App\Models\Stock::class, \App\Policies\StockPolicy::class);
 
         // Implicitly grant "Super Admin" role all permissions
-        // This works in the app by using gate-related functions like auth()->user->can() and @can()
         Gate::before(function ($user, $ability) {
             return $user->isSuperAdmin() ? true : null;
         });
     }
 }
-

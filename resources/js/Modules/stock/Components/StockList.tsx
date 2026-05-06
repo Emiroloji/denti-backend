@@ -1,6 +1,6 @@
 // src/modules/stock/Components/StockList.tsx
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { Card, Form, Typography } from 'antd'
 import { useProducts, useStocks, useStockStats } from '../Hooks/useStocks'
 import { Product as Stock, StockFilter } from '../Types/stock.types'
@@ -16,8 +16,11 @@ import { BarcodeScannerModal } from './BarcodeScannerModal'
 const { Title } = Typography
 
 export const StockList: React.FC = () => {
-  // State management
-  const [filters, setFilters] = useState<StockFilter>({})
+  const [filters, setFilters] = useState<StockFilter & { page?: number; per_page?: number }>({
+    page: 1,
+    per_page: 15
+  })
+  const [searchTerm, setSearchTerm] = useState('')
   const [editingStock, setEditingStock] = useState<Stock | null>(null)
   const [isFormModalVisible, setIsFormModalVisible] = useState(false)
   const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false)
@@ -30,12 +33,23 @@ export const StockList: React.FC = () => {
   const [useForm] = Form.useForm()
   const [isScannerVisible, setIsScannerVisible] = useState(false)
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchTerm, page: 1 }))
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   // Hooks
   const { 
-    products: stocks, 
+    products: stocksData, 
+    meta,
     isLoading, 
     refetch
-  } = useProducts(filters)
+  } = useProducts(filters, filters.page, filters.per_page)
+
+  const stocks = stocksData || []
 
   const {
     adjustStock,
@@ -56,11 +70,11 @@ export const StockList: React.FC = () => {
   }, [stocks])
 
   const handleSearch = useCallback((value: string) => {
-    setFilters(prev => ({ ...prev, name: value }))
+    setSearchTerm(value)
   }, [])
 
   const handleFilterChange = useCallback((field: keyof StockFilter, value: string | number | undefined) => {
-    setFilters(prev => ({ ...prev, [field]: value }))
+    setFilters(prev => ({ ...prev, [field]: value, page: 1 }))
   }, [])
 
   const handleAdd = useCallback(() => {
@@ -130,6 +144,14 @@ export const StockList: React.FC = () => {
           onAdjust={handleAdjust}
           onUse={handleUse}
           onViewHistory={handleViewHistory}
+          pagination={{
+            current: meta?.current_page || filters.page,
+            pageSize: meta?.per_page || filters.per_page,
+            total: meta?.total || 0,
+            onChange: (page, pageSize) => {
+                setFilters(prev => ({ ...prev, page, per_page: pageSize }))
+            }
+          }}
         />
       </Card>
 

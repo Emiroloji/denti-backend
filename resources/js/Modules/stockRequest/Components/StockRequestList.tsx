@@ -1,6 +1,6 @@
 // src/modules/stockRequest/Components/StockRequestList.tsx
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { 
   Card,
   Row, 
@@ -51,12 +51,25 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
   showCreateForm = true,
   currentUser 
 }) => {
-  const [filters, setFilters] = useState<StockRequestFilters>({
-    clinic_id: defaultClinicId
+  const [filters, setFilters] = useState<StockRequestFilters & { page?: number; per_page?: number }>({
+    clinic_id: defaultClinicId,
+    page: 1,
+    per_page: 15
   })
+  const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchTerm, page: 1 }))
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   const { stockRequests, isLoading, refetch } = useStockRequests(filters)
+  const paginationData = stockRequests as any // LengthAwarePaginator
+  const requests = paginationData?.data || []
   const { data: stats } = useStockRequestStats(defaultClinicId)
   const { clinics } = useClinics()
 
@@ -66,10 +79,15 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
   )
 
   const handleFilterChange = (key: keyof StockRequestFilters, value: string | number | undefined) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }))
+    if (key === 'search') {
+      setSearchTerm(value as string)
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [key]: value,
+        page: 1 // Reset to first page on filter change
+      }))
+    }
   }
 
   const handleDateRangeChange = (dates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => {
@@ -89,14 +107,16 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
   }
 
   const clearFilters = () => {
+    setSearchTerm('')
     setFilters({
-      clinic_id: defaultClinicId
+      clinic_id: defaultClinicId,
+      page: 1,
+      per_page: 15
     })
   }
 
   const getFilteredRequestCount = () => {
-    if (!stockRequests) return 0
-    return stockRequests.length
+    return paginationData?.total || 0
   }
 
   const statsCards = [
@@ -159,7 +179,7 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
             <Search
               placeholder="Stok adı veya talep eden ara..."
               allowClear
-              value={filters.search}
+              value={searchTerm}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               onSearch={(value) => handleFilterChange('search', value)}
             />
@@ -317,20 +337,28 @@ export const StockRequestList: React.FC<StockRequestListProps> = ({
         ) : (
           <Card styles={{ body: { padding: 0 } }}>
             <StockRequestTable
-              requests={stockRequests}
+              requests={requests}
               loading={isLoading}
               currentUser={currentUser}
               onRefresh={refetch}
+              pagination={{
+                current: paginationData?.current_page || 1,
+                pageSize: paginationData?.per_page || 15,
+                total: paginationData?.total || 0,
+                onChange: (page, pageSize) => {
+                  setFilters(prev => ({ ...prev, page, per_page: pageSize }))
+                }
+              }}
             />
           </Card>
         )}
       </div>
 
       {/* Sayfa Alt Bilgisi */}
-      {stockRequests && stockRequests.length > 0 && (
+      {requests && requests.length > 0 && (
         <Card size="small" style={{ marginTop: 16, textAlign: 'center' }}>
           <Space>
-            <span>Toplam {stockRequests.length} talep gösteriliyor</span>
+            <span>Toplam {paginationData?.total || 0} talep içerisinden {requests.length} tanesi gösteriliyor</span>
             <Divider type="vertical" />
             <Button
               type="link"

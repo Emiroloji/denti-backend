@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class ProductListResource extends JsonResource
+{
+    public function toArray($request)
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'sku' => $this->sku,
+            'unit' => $this->unit,
+            'category' => $this->category,
+            'brand' => $this->brand,
+            'min_stock_level' => $this->min_stock_level,
+            'critical_stock_level' => $this->critical_stock_level,
+            'total_stock' => $this->total_stock,
+            'status' => $this->stock_status,
+            'is_active' => $this->is_active,
+            'clinic_name' => $this->clinic?->name,
+            // Clinics list for the tag display in table
+            'clinics' => $this->relationLoaded('batches') 
+                ? $this->batches->pluck('clinic.name')->unique()->filter()->values()
+                : [],
+            'batches_count' => $this->batches_count ?? ($this->relationLoaded('batches') ? $this->batches->count() : 0),
+            'created_at' => $this->created_at?->toDateTimeString(),
+        ];
+    }
+}

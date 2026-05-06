@@ -187,7 +187,7 @@ class StockAlertService
         // Şirket sahibini veya yöneticileri bul
         $users = \App\Models\User::where('company_id', $companyId)
             ->whereHas('roles', function($q) {
-                $q->whereIn('name', ['Owner', 'Admin']);
+                $q->whereIn('name', ['Company Owner', 'Admin', 'Clinic Manager']);
             })->get();
 
         if ($users->isEmpty()) return;
@@ -204,7 +204,7 @@ class StockAlertService
         // Şirket sahibi ve yöneticileri bul
         $users = \App\Models\User::where('company_id', $alert->stock->company_id)
             ->whereHas('roles', function($q) {
-                $q->whereIn('name', ['Owner', 'Admin', 'Stock Manager']);
+                $q->whereIn('name', ['Company Owner', 'Admin', 'Stock Manager', 'Clinic Manager']);
             })->get();
 
         if ($users->isNotEmpty()) {
@@ -280,36 +280,22 @@ class StockAlertService
         return $this->stockAlertRepository->delete($alertId);
     }
 
-    public function bulkResolve(array $ids, string $resolvedBy): int
+    public function bulkResolve(array $ids, string $resolvedBy, ?string $resolutionNotes = null): int
     {
-        $count = 0;
-        foreach ($ids as $id) {
-            if ($this->resolveAlert($id, $resolvedBy)) {
-                $count++;
-            }
+        if ($ids === []) {
+            return 0;
         }
-        return $count;
+
+        return $this->stockAlertRepository->bulkResolve($ids, $resolvedBy);
     }
 
     public function bulkDismiss(array $ids): int
     {
-        $count = 0;
-        foreach ($ids as $id) {
-            if ($this->dismissAlert($id)) {
-                $count++;
-            }
-        }
-        return $count;
+        return $this->stockAlertRepository->bulkDeleteByIds($ids);
     }
 
     public function bulkDelete(array $ids): int
     {
-        $count = 0;
-        foreach ($ids as $id) {
-            if ($this->deleteAlert($id)) {
-                $count++;
-            }
-        }
-        return $count;
+        return $this->stockAlertRepository->bulkDeleteByIds($ids);
     }
 }

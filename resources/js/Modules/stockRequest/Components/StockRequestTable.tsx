@@ -20,13 +20,20 @@ interface StockRequestTableProps {
   loading: boolean
   currentUser: string
   onRefresh: () => void
+  pagination?: {
+    current: number
+    pageSize: number
+    total: number
+    onChange: (page: number, pageSize: number) => void
+  }
 }
 
 export const StockRequestTable: React.FC<StockRequestTableProps> = ({
   requests,
   loading,
   currentUser,
-  onRefresh
+  onRefresh,
+  pagination
 }) => {
   const columns: ColumnsType<StockRequest> = [
     {
@@ -35,7 +42,7 @@ export const StockRequestTable: React.FC<StockRequestTableProps> = ({
       width: 200,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{record.stock?.name || 'Bilinmeyen Ürün'}</Text>
+          <Text strong>{record.stock?.product?.name || record.stock?.name || 'Bilinmeyen Ürün'}</Text>
           <Space>
             <Tag color="blue">{record.requested_quantity} {record.stock?.unit || 'Adet'}</Tag>
             {record.approved_quantity !== undefined && record.status !== 'pending' && (
@@ -132,7 +139,11 @@ export const StockRequestTable: React.FC<StockRequestTableProps> = ({
       dataSource={requests}
       rowKey="id"
       loading={loading}
-      pagination={{
+      pagination={pagination ? {
+        ...pagination,
+        showSizeChanger: true,
+        showTotal: (total) => `Toplam ${total} talep`,
+      } : {
         pageSize: 10,
         showSizeChanger: true,
         showTotal: (total) => `Toplam ${total} talep`,

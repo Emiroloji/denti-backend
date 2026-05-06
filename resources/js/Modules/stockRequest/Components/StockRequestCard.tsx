@@ -39,7 +39,7 @@ interface StockRequestCardProps {
   showActions?: boolean
 }
 
-export const StockRequestCard: React.FC<StockRequestCardProps> = ({ 
+export const StockRequestCard: React.FC<StockRequestCardProps> = React.memo(({ 
   request, 
   currentUser,
   showActions = true 
@@ -279,4 +279,5 @@ export const StockRequestCard: React.FC<StockRequestCardProps> = ({
       )}
     </Card>
   )
-}
+})
+StockRequestCard.displayName = 'StockRequestCard'

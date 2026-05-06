@@ -341,19 +341,25 @@ class StockTransferController extends Controller
     public function getPendingCount(): JsonResponse
     {
         $user = Auth::user();
+        $clinicId = $user->clinic_id ?? 'none';
+        $cacheKey = "pending_transfers_count_{$user->id}_{$clinicId}";
 
-        $incomingCount = StockTransfer::where('to_clinic_id', $user->clinic_id)
-            ->where('status', StockTransfer::STATUS_PENDING)
-            ->count();
+        $stats = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($user) {
+            $incomingCount = StockTransfer::where('to_clinic_id', $user->clinic_id)
+                ->where('status', StockTransfer::STATUS_PENDING)
+                ->count();
 
-        $outgoingCount = StockTransfer::where('from_clinic_id', $user->clinic_id)
-            ->where('status', StockTransfer::STATUS_PENDING)
-            ->count();
+            $outgoingCount = StockTransfer::where('from_clinic_id', $user->clinic_id)
+                ->where('status', StockTransfer::STATUS_PENDING)
+                ->count();
 
-        return $this->success([
-            'incoming' => $incomingCount,
-            'outgoing' => $outgoingCount,
-            'total' => $incomingCount + $outgoingCount,
-        ], 'Pending transfer counts.');
+            return [
+                'incoming' => $incomingCount,
+                'outgoing' => $outgoingCount,
+                'total' => $incomingCount + $outgoingCount,
+            ];
+        });
+
+        return $this->success($stats, 'Pending transfer counts.');
     }
 }

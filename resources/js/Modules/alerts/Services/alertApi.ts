@@ -125,9 +125,14 @@ export const alertApi = {
     try {
       const queryString = clinicId ? `?clinic_id=${clinicId}` : ''
       return await api.get(`/stock-alerts/pending/count${queryString}`)
-    } catch (error) {
+    } catch (error: any) {
+      // Badge endpoint'i kritik değil; yetki yoksa veya endpoint hatalıysa UI'ı bloklamayalım
+      if (error?.response?.status === 403) {
+        return { success: false, data: { count: 0 }, message: 'No permission for pending alert count' } as ApiResponse<{ count: number }>
+      }
+
       console.warn('❌ Pending count endpoint error:', error)
-      throw error
+      return { success: false, data: { count: 0 }, message: 'Could not fetch pending count' } as ApiResponse<{ count: number }>
     }
   },
 

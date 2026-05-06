@@ -23,9 +23,10 @@ class StockRequestController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'status', 'requester_clinic_id', 'requested_from_clinic_id', 'type']);
+        $filters = $request->only(['search', 'status', 'requester_clinic_id', 'requested_from_clinic_id', 'type', 'clinic_id']);
         
-        $requests = $this->stockRequestService->getAllWithFilters($filters);
+        $perPage = min((int)$request->get('per_page', 15), 100);
+        $requests = $this->stockRequestService->getAllWithFilters($filters, $perPage);
 
         return response()->json([
             'success' => true,

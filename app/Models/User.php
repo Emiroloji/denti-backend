@@ -16,7 +16,8 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasRoles, Tenantable;
 
     const ROLE_SUPER_ADMIN = 'Super Admin';
-    const ROLE_OWNER = 'Owner';
+    /** Veritabanı / seeder ile aynı isim (eski 'Owner' sabiti hatalıydı) */
+    const ROLE_OWNER = 'Company Owner';
 
     protected $guard_name = 'web';
 
@@ -95,11 +96,12 @@ class User extends Authenticatable
      */
     public function isSuperAdmin(): bool
     {
-        static $isSuperAdmin = null;
-        if ($isSuperAdmin === null) {
+        static $requestCache = [];
+        if (isset($requestCache[$this->id])) return $requestCache[$this->id];
+
+        return $requestCache[$this->id] = \Illuminate\Support\Facades\Cache::remember("user_is_super_admin_{$this->id}", 3600, function () {
             // 🛡️ TenantScope döngüsünü kırmak için rollerini scope olmadan kontrol et
-            $isSuperAdmin = $this->roles()->withoutGlobalScopes()->where('name', self::ROLE_SUPER_ADMIN)->exists();
-        }
-        return $isSuperAdmin;
+            return $this->roles()->withoutGlobalScopes()->where('name', self::ROLE_SUPER_ADMIN)->exists();
+        });
     }
 }

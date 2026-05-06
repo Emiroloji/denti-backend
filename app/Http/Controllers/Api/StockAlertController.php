@@ -137,15 +137,21 @@ class StockAlertController extends Controller
         $companyId = auth()->user()->company_id;
 
         // �️ Ürün bazlı uyarı sayısı - her ürün için sadece 1 uyarı sayılır
-        $query = \App\Models\StockAlert::where('company_id', $companyId)
-            ->where('is_active', true)
-            ->where('is_resolved', false);
+        $user = auth()->user();
+        $companyId = $user->company_id;
+        $cacheKey = "pending_alerts_count_{$companyId}_" . ($clinicId ?? 'all');
 
-        if ($clinicId) {
-            $query->where('clinic_id', $clinicId);
-        }
+        $count = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($companyId, $clinicId) {
+            $query = \App\Models\StockAlert::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->where('is_resolved', false);
 
-        $count = $query->count();
+            if ($clinicId) {
+                $query->where('clinic_id', $clinicId);
+            }
+
+            return $query->count();
+        });
 
         return response()->json([
             'success' => true,

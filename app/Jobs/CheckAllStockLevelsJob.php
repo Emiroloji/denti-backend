@@ -27,22 +27,30 @@ class CheckAllStockLevelsJob implements ShouldQueue
     public function handle(StockAlertService $stockAlertService)
     {
         $lowStocks = [];
+        // Aynı ürünün her parti (stock) satırı için alert hesabı aynı sonucu verir;
+        // product.batches eager load olmazsa her satırda ekstra DB sorgusu patlar (N+1).
+        $seenProductIds = [];
 
-        // Collect all stocks that need alerts
-        Stock::active()->with(['product', 'clinic.company'])->chunk(100, function ($stocks) use (&$lowStocks, $stockAlertService) {
-            foreach ($stocks as $stock) {
-                // We use checkAndCreateAlerts but without immediate notification if possible
-                // For simplicity, let's just collect those that HAVE alerts
-                $alerts = $stockAlertService->checkAndGetAlerts($stock);
-                if (!empty($alerts)) {
-                    $companyId = $stock->company_id;
-                    $lowStocks[$companyId][] = [
-                        'stock' => $stock,
-                        'alerts' => $alerts
-                    ];
-                }
+        foreach (
+            Stock::active()
+                ->with(['product.batches', 'clinic.company'])
+                ->orderBy('product_id')
+                ->cursor() as $stock
+        ) {
+            if (isset($seenProductIds[$stock->product_id])) {
+                continue;
             }
-        });
+            $seenProductIds[$stock->product_id] = true;
+
+            $alerts = $stockAlertService->checkAndGetAlerts($stock);
+            if (!empty($alerts)) {
+                $companyId = $stock->company_id;
+                $lowStocks[$companyId][] = [
+                    'stock' => $stock,
+                    'alerts' => $alerts
+                ];
+            }
+        }
 
         // Send Digest Notifications per Company
         foreach ($lowStocks as $companyId => $items) {

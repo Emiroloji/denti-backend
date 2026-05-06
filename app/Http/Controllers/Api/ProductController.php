@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Resources\StockTransactionResource;
 
+use App\Http\Resources\ProductListResource;
+
 class ProductController extends Controller
 {
 
@@ -22,11 +24,11 @@ class ProductController extends Controller
     {
         try {
             $filters = $request->only(['search', 'category', 'status', 'clinic_id', 'level']);
-            $perPage = min((int)$request->query('per_page', 50), 100);
+            $perPage = min((int)$request->query('per_page', 15), 100);
 
             $products = $this->productService->getAllProducts($filters, $perPage);
 
-            return $this->success(ProductResource::collection($products));
+            return $this->success(ProductListResource::collection($products));
         } catch (\Exception $e) {
             Log::error($e);
             return $this->error(__('messages.server_error'), 500);

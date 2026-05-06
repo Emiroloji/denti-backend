@@ -29,7 +29,7 @@ export const api = axios.create({
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
-  timeout: 10000,
+  timeout: 30000,
 })
 
 // CSRF singleton promise — eşzamanlı POST isteklerinde tek bir CSRF isteği atılır
@@ -98,7 +98,11 @@ api.interceptors.response.use(
         window.dispatchEvent(new Event('auth:unauthorized'))
       }
     } else if (error.response?.status === 403) {
-      antdHelper.message?.error('Bu işlemi yapmaya yetkiniz yok!')
+      const url = error.config?.url || ''
+      // Sessiz: layout badge/polling endpoint'i yetkisiz kullanıcılar için spam üretmesin
+      if (!url.includes('/stock-alerts/pending/count')) {
+        antdHelper.message?.error('Bu işlemi yapmaya yetkiniz yok!')
+      }
     } else if (error.response?.status === 404) {
       // ✅ 404 artık kullanıcıya warning olarak gösteriliyor
       const msg = error.response.data?.message || 'İstenen kayıt bulunamadı.'

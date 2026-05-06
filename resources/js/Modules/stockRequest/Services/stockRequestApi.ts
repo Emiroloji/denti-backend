@@ -14,7 +14,7 @@ import {
 
 export const stockRequestApi = {
   // Tüm talepleri listele
-  getAll: (filters?: StockRequestFilters): Promise<ApiResponse<StockRequest[]>> => {
+  getAll: (filters?: StockRequestFilters & { page?: number; per_page?: number }): Promise<ApiResponse<any>> => {
     const params = new URLSearchParams()
     
     if (filters?.clinic_id) params.append('clinic_id', filters.clinic_id.toString())
@@ -23,6 +23,8 @@ export const stockRequestApi = {
     if (filters?.search) params.append('search', filters.search)
     if (filters?.start_date) params.append('start_date', filters.start_date)
     if (filters?.end_date) params.append('end_date', filters.end_date)
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.per_page) params.append('per_page', filters.per_page.toString())
     
     const queryString = params.toString()
     return api.get(`/stock-requests${queryString ? `?${queryString}` : ''}`)

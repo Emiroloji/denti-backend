@@ -23,8 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]); */
 
         $middleware->alias([
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role' => \App\Http\Middleware\EnsureRole::class,
+            'permission' => \App\Http\Middleware\EnsurePermission::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             '2fa.verified' => \App\Http\Middleware\EnsureTwoFactorIsVerified::class,
         ]);

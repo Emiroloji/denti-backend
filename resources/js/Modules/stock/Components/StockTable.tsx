@@ -35,9 +35,10 @@ interface StockTableProps {
   onAdjust: (stock: Stock) => void
   onUse: (stock: Stock) => void
   onViewHistory: (stock: Stock) => void
+  pagination?: any
 }
 
-export const StockTable: React.FC<StockTableProps> = ({
+export const StockTable: React.FC<StockTableProps> = React.memo(({
   stocks,
   loading,
   isBatchMode = false,
@@ -47,6 +48,7 @@ export const StockTable: React.FC<StockTableProps> = ({
   onHardDelete,
   onReactivate,
   onUse,
+  pagination
 }) => {
   const {
     advancedModalStock,
@@ -76,7 +78,7 @@ export const StockTable: React.FC<StockTableProps> = ({
     return stocks.filter(s => (s.current_stock || 0) === 0).length
   }, [stocks, isBatchMode])
 
-  const columns: ColumnsType<Stock> = [
+  const columns: ColumnsType<Stock> = useMemo(() => [
     {
       title: '📦 Ürün Bilgisi',
       key: 'product_info',
@@ -200,7 +202,7 @@ export const StockTable: React.FC<StockTableProps> = ({
             width: 100,
             align: 'center' as const,
             render: (_unused: unknown, record: any) => (
-                <Badge count={record.batches?.length || 0} color="#1890ff" showZero />
+                <Badge count={record.batches?.length || (record as any).batches_count || 0} color="#1890ff" showZero />
             )
         }
     ]),
@@ -252,7 +254,7 @@ export const StockTable: React.FC<StockTableProps> = ({
         </Space>
       )
     },
-  ]
+  ], [isBatchMode, onEdit, onUse, handleDeleteConfirm, handleAdvancedDelete])
 
   return (
     <>
@@ -276,7 +278,7 @@ export const StockTable: React.FC<StockTableProps> = ({
       dataSource={filteredStocks}
       rowKey="id"
       loading={loading}
-      pagination={{
+      pagination={pagination || {
         pageSize: 10,
         showSizeChanger: true,
         showTotal: (total) => `Toplam ${total} kayıt`,
@@ -360,4 +362,6 @@ export const StockTable: React.FC<StockTableProps> = ({
     `}} />
     </>
   )
-}
+})
+
+StockTable.displayName = 'StockTable'

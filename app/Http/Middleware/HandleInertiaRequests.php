@@ -48,8 +48,8 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'company_id' => $user->company_id,
                     'clinic_id' => $user->clinic_id,
-                    'roles' => Cache::remember("user_roles_{$user->id}", 60, fn() => $user->getRoleNames()),
-                    'permissions' => Cache::remember("user_perms_{$user->id}", 60, fn() => $user->getAllPermissions()->pluck('name')),
+                    'roles' => Cache::remember("user_roles_{$user->id}", 300, fn() => $user->getRoleNames()),
+                    'permissions' => Cache::remember("user_perms_{$user->id}", 300, fn() => $user->getAllPermissions()->pluck('name')),
                 ] : null,
             ],
             'flash' => [

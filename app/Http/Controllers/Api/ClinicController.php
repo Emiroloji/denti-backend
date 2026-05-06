@@ -62,18 +62,32 @@ class ClinicController extends Controller
         try {
             $validatedData = $validator->validated();
             
-            // 🛡️ Super Admin değilse kendi şirketine zorla
-            if (!auth()->user()->hasRole('Super Admin')) {
-                $validatedData['company_id'] = auth()->user()->company_id;
-            } elseif (!isset($validatedData['company_id'])) {
-                $validatedData['company_id'] = auth()->user()->company_id;
+            // 🛡️ Yetki ve Şirket Kontrolü
+            $currentUser = auth()->user();
+            
+            if (!$currentUser->isSuperAdmin()) {
+                $validatedData['company_id'] = $currentUser->company_id;
+            }
+
+            if (empty($validatedData['company_id'])) {
+                Log::error('Klinik oluşturma hatası: Kullanıcının şirket bilgisi (company_id) eksik.', ['user_id' => $currentUser->id]);
+                return $this->error('Klinik oluşturmak için bir şirkete bağlı olmalısınız.', 400);
             }
 
             $clinic = $this->clinicService->createClinic($validatedData);
+            
+            $cacheCompanyId = $currentUser->isSuperAdmin()
+                ? ($validatedData['company_id'] ?? 'global')
+                : ($currentUser->company_id ?? 'global');
+            \Illuminate\Support\Facades\Cache::forget("all_clinics_{$cacheCompanyId}");
+            
             return $this->success($clinic, 'Klinik başarıyla oluşturuldu', 201);
         } catch (\Exception $e) {
-            Log::error('Klinik oluşturulurken hata: ' . $e->getMessage());
-            return $this->error($e->getMessage(), 400);
+            Log::error('Klinik oluşturulurken teknik hata: ' . $e->getMessage(), [
+                'data' => $data,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->error('Klinik oluşturulamadı: ' . $e->getMessage(), 400);
         }
     }
 
@@ -125,6 +139,10 @@ class ClinicController extends Controller
                 return $this->error('Klinik bulunamadı', 404);
             }
 
+            $u = auth()->user();
+            $cid = $u->isSuperAdmin() ? ($clinic->company_id ?? 'global') : ($u->company_id ?? 'global');
+            \Illuminate\Support\Facades\Cache::forget("all_clinics_{$cid}");
+
             return $this->success($clinic, 'Klinik başarıyla güncellendi');
         } catch (\Exception $e) {
             Log::error('Klinik güncellenirken hata: ' . $e->getMessage());
@@ -145,11 +163,14 @@ class ClinicController extends Controller
                 return $this->error('Bu işlem için yetkiniz yok.', 403);
             }
 
+            $companyIdForCache = $clinic->company_id ?? 'global';
             $deleted = $this->clinicService->deleteClinic($id);
 
             if (!$deleted) {
                 return $this->error('Klinik silme işlemi başarısız.', 400);
             }
+
+            \Illuminate\Support\Facades\Cache::forget("all_clinics_{$companyIdForCache}");
 
             return $this->success(null, 'Klinik başarıyla silindi');
         } catch (\Exception $e) {
@@ -188,6 +209,8 @@ class ClinicController extends Controller
             if (!$clinic) {
                 return $this->error('Klinik bulunamadı', 404);
             }
+
+            $clinic->loadMissing(['stocks.product', 'stocks.supplier']);
 
             return $this->success($clinic->stocks);
         } catch (\Exception $e) {

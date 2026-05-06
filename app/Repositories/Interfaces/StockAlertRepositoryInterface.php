@@ -23,4 +23,8 @@ interface StockAlertRepositoryInterface
     public function deleteActiveAlertsByProduct(int $productId): void;
     public function countActiveAlerts(int $clinicId = null): int;
     public function countAlertsByType(string $type, int $clinicId = null): int;
+
+    public function bulkResolve(array $ids, string $resolvedBy): int;
+
+    public function bulkDeleteByIds(array $ids): int;
 }

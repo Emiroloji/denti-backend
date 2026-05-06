@@ -136,4 +136,26 @@ class StockAlertRepository implements StockAlertRepositoryInterface
                    ->where('is_active', true)
                    ->delete();
     }
+
+    public function bulkResolve(array $ids, string $resolvedBy): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        return $this->model->whereIn('id', $ids)->update([
+            'is_resolved' => true,
+            'resolved_at' => now(),
+            'resolved_by' => $resolvedBy,
+        ]);
+    }
+
+    public function bulkDeleteByIds(array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        return $this->model->whereIn('id', $ids)->delete();
+    }
 }

@@ -35,9 +35,10 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
   const { url } = usePage()
   const { user, logout } = useAuth()
   const { hasPermission, isAdmin, isSuperAdmin } = usePermissions()
-  
-  // Bekleyen uyarı sayısını çek
-  const { data: pendingAlertCount } = usePendingAlertCount()
+  const canViewStockAlerts = hasPermission('view-stocks') || isSuperAdmin()
+
+  // Bekleyen uyarı sayısını sadece yetkisi olan kullanıcılar için çek
+  const { data: pendingAlertCount } = usePendingAlertCount(undefined, canViewStockAlerts)
 
   const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
     if (key === 'logout') {
@@ -87,7 +88,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
       icon: <SwapOutlined />,
       label: <Link href="/stock-requests">Stok Talepleri</Link>,
     },
-    {
+    ...(canViewStockAlerts ? [{
       key: '/alerts',
       icon: <BellOutlined />,
       label: (
@@ -100,7 +101,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
           </div>
         </Link>
       ),
-    },
+    }] : []),
     {
       key: '/todos',
       icon: <CheckSquareOutlined />,

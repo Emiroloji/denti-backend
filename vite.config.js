@@ -18,4 +18,19 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
+    build: {
+        // Üretimde vendor chunk'ları: tarayıcı önbelleği + daha küçük ana bundle (deploy sonrası daha az indirme)
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return;
+                    if (id.includes('antd')) return 'antd';
+                    if (id.includes('@tanstack/react-query')) return 'react-query';
+                    if (id.includes('@inertiajs')) return 'inertia';
+                    if (id.includes('react-dom') || id.includes('/react/')) return 'react-vendor';
+                },
+            },
+        },
+        chunkSizeWarningLimit: 900,
+    },
 });

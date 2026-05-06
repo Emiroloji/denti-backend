@@ -38,8 +38,11 @@ class DashboardController extends Controller
                 ];
             }
 
+            // Relationship'i önceden yükle
+            $companyName = $user->company?->name ?? 'Bilinmeyen Şirket';
+
             return [
-                'company_name' => $user->company->name,
+                'company_name' => $companyName,
                 'total_users' => User::where('company_id', $companyId)->count(),
                 'total_doctors' => User::where('company_id', $companyId)->role('Doctor')->count(),
                 'total_employees' => User::where('company_id', $companyId)->count(),

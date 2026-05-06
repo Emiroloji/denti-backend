@@ -20,6 +20,7 @@ class CheckStockAlertsListener implements ShouldQueue
 
     public function handle(StockLevelChanged $event): void
     {
-        $this->alertService->checkAndCreateAlerts($event->stock);
+        $stock = $event->stock->loadMissing(['product.batches']);
+        $this->alertService->checkAndCreateAlerts($stock);
     }
 }

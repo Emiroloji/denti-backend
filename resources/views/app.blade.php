@@ -15,7 +15,8 @@
     <!-- Scripts -->
     {{-- @routes --}}
     @viteReactRefresh
-    @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+    {{-- Giriş vite.config.js ile aynı olmalı; sayfalar app.tsx içinde import.meta.glob ile yüklenir --}}
+    @vite(['resources/css/app.css', 'resources/js/app.tsx'])
     @inertiaHead
 </head>
 

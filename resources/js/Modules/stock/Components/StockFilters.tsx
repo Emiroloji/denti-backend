@@ -46,6 +46,7 @@ export const StockFilters: React.FC<StockFiltersProps> = ({
                     <Search
                         placeholder="Stok adı veya SKU..."
                         onSearch={onSearch}
+                        onChange={(e) => onSearch(e.target.value)}
                         style={{ width: "100%" }}
                         allowClear
                     />

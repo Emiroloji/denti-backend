@@ -26,16 +26,22 @@ class StockRequestRepository implements StockRequestRepositoryInterface
                           ->get();
     }
 
-    public function getAllWithFilters(array $filters = []): Collection
+    public function getAllWithFilters(array $filters = [], int $perPage = 15)
     {
-        $query = $this->model->with(['requesterClinic', 'requestedFromClinic', 'stock']);
+        $query = $this->model->with([
+            'requesterClinic:id,name,specialty_code', 
+            'requestedFromClinic:id,name,specialty_code', 
+            'stock:id,product_id,batch_number,unit,category,brand',
+            'stock.product:id,name,sku'
+        ]);
 
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
             $query->where(function ($q) use ($search) {
                 $q->where('request_number', 'like', $search)
-                  ->orWhereHas('stock', function($sq) use ($search) {
-                      $sq->where('name', 'like', $search);
+                  ->orWhereHas('stock.product', function($sq) use ($search) {
+                      $sq->where('name', 'like', $search)
+                        ->orWhere('sku', 'like', $search);
                   });
             });
         }
@@ -64,7 +70,7 @@ class StockRequestRepository implements StockRequestRepositoryInterface
             $query->where('requested_from_clinic_id', $filters['requested_from_clinic_id']);
         }
 
-        return $query->orderByDesc('requested_at')->get();
+        return $query->orderByDesc('requested_at')->paginate($perPage);
     }
 
     public function find(int $id): ?StockRequest

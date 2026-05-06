@@ -8,15 +8,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProductRepository
 {
-    public function getAllWithFilters(array $filters = [], int $perPage = 50): LengthAwarePaginator
+    public function getAllWithFilters(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Product::query()->with(['batches.clinic', 'clinic'])
-            ->withSum(['stockTransactions as total_in' => function($q) {
-                $q->whereIn('type', ['entry', 'adjustment_plus', 'adjustment_increase', 'purchase', 'transfer_in', 'returned', 'return_in']);
-            }], 'quantity')
-            ->withSum(['stockTransactions as total_out' => function($q) {
-                $q->whereIn('type', ['usage', 'loss', 'adjustment_minus', 'adjustment_decrease', 'transfer_out', 'expired', 'damaged', 'return_out']);
-            }], 'quantity');
+        $query = Product::query()
+            ->with(['batches.clinic:id,name', 'clinic:id,name'])
+            ->withCount('batches');
 
         $isSqlite = \Illuminate\Support\Facades\DB::getDriverName() === 'sqlite';
         $now = now();
@@ -57,11 +53,12 @@ class ProductRepository
             
             // Stok Miktarı Bazlı Filtreler (Total Stock)
             if (in_array($level, ['low', 'critical'])) {
+                // Optimization: Use subquery in WHERE to avoid repeated SUM calculations if possible, 
+                // but for readability and relative speed, we'll refine the existing one to be more targeted.
                 if ($level === 'critical') {
                     $query->whereHas('batches', function($q) {
                         $q->where('is_active', 1);
-                    }, '>', 0)
-                    ->whereRaw("(SELECT SUM(current_stock) FROM stocks WHERE product_id = products.id AND is_active = 1) <= COALESCE(red_alert_level, critical_stock_level)");
+                    })->whereRaw("(SELECT SUM(current_stock) FROM stocks WHERE product_id = products.id AND is_active = 1) <= COALESCE(red_alert_level, critical_stock_level)");
                 } else {
                     $query->whereRaw("(SELECT SUM(current_stock) FROM stocks WHERE product_id = products.id AND is_active = 1) <= COALESCE(yellow_alert_level, min_stock_level)")
                           ->whereRaw("(SELECT SUM(current_stock) FROM stocks WHERE product_id = products.id AND is_active = 1) > COALESCE(red_alert_level, critical_stock_level)");
